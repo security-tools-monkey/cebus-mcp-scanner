@@ -1,0 +1,33 @@
+# Example MCP Scanner Configuration
+# This file demonstrates how to configure rule severities and allow-lists
+
+rules:
+  # Enable/disable specific rules
+  RCE001:
+    enabled: true
+    severity_override:
+      local: low
+      shared: high
+  
+  SSRF001:
+    enabled: true
+    severity_override:
+      local: low
+      shared: high
+  
+  SENS001:
+    enabled: true
+    severity_override:
+      local: info
+      shared: medium
+
+# Allow-lists for network access (future feature)
+allow_lists:
+  http_hosts:
+    - "api.example.com"
+    - "*.trusted-domain.com"
+  
+  file_paths:
+    - "/safe/directory/*"
+    - "/tmp/scratch/*"
+
