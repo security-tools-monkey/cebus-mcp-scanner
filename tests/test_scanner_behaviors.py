@@ -11,7 +11,7 @@ from mcp_scanner.loader.project_loader import ProjectMetadata
 from mcp_scanner.rules.base import Rule, RuleMetadata, ScanContext
 from mcp_scanner.scanner import ScanResult, Scanner
 from mcp_scanner.settings import ScanMode, Severity, SeverityLevel
-from mcp_scanner.types import Finding, FindingsCollection
+from mcp_scanner.core_types import Finding, FindingsCollection
 from mcp_scanner.integrations.mcp_tool import MCPScannerTool
 
 

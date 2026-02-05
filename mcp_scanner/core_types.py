@@ -1,3 +1,7 @@
+"""
+Core result data structures (Finding, FindingsCollection) and utility methods.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

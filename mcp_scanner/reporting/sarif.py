@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Iterable
 
-from ..types import Finding
+from ..core_types import Finding
 
 
 def generate_sarif(findings: Iterable[Finding]) -> str:

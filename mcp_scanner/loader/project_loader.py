@@ -1,3 +1,7 @@
+"""
+Project loader: resolves scan root and extracts MCP metadata/manifests into ProjectMetadata.
+"""
+
 from __future__ import annotations
 
 import json
@@ -97,7 +101,8 @@ def _parse_common_layout(root: Path) -> Optional[MCPManifest]:
 def load_manifest(root: Path) -> Optional[MCPManifest]:
     """Load MCP manifest from schema-specified or common layouts."""
     # First, try schema-specified formats (mcp.json, mcp.yaml)
-    for candidate in ("mcp.json", "mcp.yaml", "mcp.yml"):
+    # TODO: Add support for additional manifest formats
+    for candidate in ("mcp.json", "mcp.yaml", "mcp.yml", "manifest.json"):
         path = root / candidate
         if path.exists():
             with open(path, "r", encoding="utf-8") as handle:

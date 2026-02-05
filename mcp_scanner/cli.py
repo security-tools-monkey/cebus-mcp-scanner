@@ -1,3 +1,7 @@
+"""
+Typer-based CLI for running scans, listing rules, and printing recommendations.
+"""
+
 from __future__ import annotations
 
 import json
@@ -98,6 +102,7 @@ def scan(
 
     findings = list(result.findings)
 
+    # Select output format
     if output_format == "console":
         render_console(findings)
     elif output_format == "json":

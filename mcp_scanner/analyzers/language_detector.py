@@ -45,22 +45,26 @@ def detect_languages(root: Path) -> List[str]:
             name = file_path.name.lower()
 
             # Python
+            # TODO: make suffix list configurable
             if suffix == ".py":
                 languages.add("python")
 
             # JavaScript
+            # TODO: make suffix list configurable
             if suffix == ".js" and name != "tsconfig.json":
                 # Only add JS if TypeScript not already detected
                 if "typescript" not in languages:
                     languages.add("javascript")
 
             # TypeScript
+            # TODO: make suffix list configurable
             if suffix == ".ts" or suffix == ".tsx" or name == "tsconfig.json":
                 languages.add("typescript")
                 # TypeScript projects typically also have JS files
                 languages.discard("javascript")
 
             # Go
+            # TODO: make suffix list configurable
             if suffix == ".go":
                 languages.add("go")
 

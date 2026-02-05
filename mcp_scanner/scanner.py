@@ -1,3 +1,7 @@
+"""
+Core scan orchestrator: loads project context, runs rules, and returns a ScanResult.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,7 +16,7 @@ from .loader.project_loader import ProjectMetadata, load_project
 from .rules.base import Rule, ScanContext
 from .rules.security_rules import all_rules
 from .settings import ScanMode, SeverityLevel
-from .types import Finding, FindingsCollection
+from .core_types import Finding, FindingsCollection
 
 
 @dataclass

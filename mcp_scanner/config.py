@@ -1,3 +1,7 @@
+"""
+Configuration loading and models (rule toggles, severity overrides, allowlists).
+"""
+
 from __future__ import annotations
 
 import json

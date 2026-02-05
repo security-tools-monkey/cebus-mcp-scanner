@@ -1,3 +1,7 @@
+"""
+Built-in security rules and the all_rules() registry used by Scanner by default.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -12,7 +16,7 @@ from ..patterns import (
     SECRET_PATTERNS,
 )
 from ..settings import ScanMode, Severity, SeverityLevel
-from ..types import Finding
+from ..core_types import Finding
 from .base import Rule, RuleMetadata, ScanContext
 
 _HTTP_CLIENT_NAMES = {

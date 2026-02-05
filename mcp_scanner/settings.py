@@ -1,3 +1,7 @@
+"""
+Scanner domain settings: modes, severity levels, defaults, and related helpers.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -10,6 +10,7 @@ from typing import Iterable, List, Optional
 from .base import LanguageAnalyzer
 from .language_detector import detect_languages, EXCLUDED_DIRS
 from .python_analyzer_v2 import PythonAnalyzer
+from .js_ts_analyzer import JavaScriptAnalyzer, TypeScriptAnalyzer
 from ..ast_common import SourceFile
 from ..logging_utils import ScanLogger, VerbosityLevel
 
@@ -55,15 +56,15 @@ class MultiLanguageAnalyzer:
                 self.logger.debug(f"Initialized {lang} analyzer")
 
     def _create_analyzer(self, language: str) -> LanguageAnalyzer | None:
-        """Create analyzer instance for a language."""
+        """Create an analyzer instance for a language."""
         if language == "python":
             return PythonAnalyzer(self.root)
-        # TODO: Add other languages in future phases
-        # elif language == "javascript":
-        #     return JavaScriptAnalyzer(self.root)
-        # elif language == "typescript":
-        #     return TypeScriptAnalyzer(self.root)
-        # elif language == "go":
+        if language == "javascript":
+            return JavaScriptAnalyzer(self.root)
+        if language == "typescript":
+            return TypeScriptAnalyzer(self.root)
+        # TODO: Add Go analyzer in a future phase
+        # if language == "go":
         #     return GoAnalyzer(self.root)
         else:
             self.logger.debug(f"No analyzer available for language: {language}")

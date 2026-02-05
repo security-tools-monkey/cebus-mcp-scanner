@@ -39,11 +39,11 @@ class ASTNode:
 
 @dataclass
 class CallNode(ASTNode):
-    """Represents a function/method call."""
-
-    callee: str  # Full qualified name: "os.system", "child_process.exec", "exec.Command"
-    arguments: List[ASTNode] = field(default_factory=list)
-    keyword_arguments: dict[str, ASTNode] = field(default_factory=dict)
+    # Make subclass fields defaulted to avoid:
+    # TypeError: non-default argument 'callee' follows default argument
+    callee: str = "<unknown>"
+    arguments: list["ASTNode"] = field(default_factory=list)
+    keyword_arguments: dict[str, "ASTNode"] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.node_type = "call"
@@ -52,9 +52,8 @@ class CallNode(ASTNode):
 @dataclass
 class LiteralNode(ASTNode):
     """Represents a literal value."""
-
-    value: Any
-    literal_type: str  # "string", "number", "boolean", "null", etc.
+    value: Any = None
+    literal_type: str = "unknown"  # "string", "number", "boolean", "null", etc.
 
     def __post_init__(self) -> None:
         self.node_type = "literal"
@@ -63,8 +62,7 @@ class LiteralNode(ASTNode):
 @dataclass
 class VariableNode(ASTNode):
     """Represents a variable reference."""
-
-    name: str
+    name: str = ""
 
     def __post_init__(self) -> None:
         self.node_type = "variable"
@@ -73,10 +71,8 @@ class VariableNode(ASTNode):
 @dataclass
 class ImportNode(ASTNode):
     """Represents an import statement."""
-
-    module: str
-    imports: List[str] = field(default_factory=list)  # What's imported from the module
-    alias: Optional[str] = None  # Import alias if any
+    module: str = ""
+    imports: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.node_type = "import"
@@ -85,9 +81,8 @@ class ImportNode(ASTNode):
 @dataclass
 class AssignmentNode(ASTNode):
     """Represents an assignment statement."""
-
-    target: ASTNode  # What's being assigned to
-    value: ASTNode  # What's being assigned
+    target: Optional["ASTNode"] = None
+    value: Optional["ASTNode"] = None
 
     def __post_init__(self) -> None:
         self.node_type = "assignment"
@@ -95,11 +90,10 @@ class AssignmentNode(ASTNode):
 
 @dataclass
 class BinaryOpNode(ASTNode):
-    """Represents a binary operation."""
-
-    operator: str  # "+", "-", "==", "in", etc.
-    left: ASTNode
-    right: ASTNode
+    """Represents a binary operation (e.g., a + b)."""
+    operator: str = ""
+    left: Optional["ASTNode"] = None
+    right: Optional["ASTNode"] = None
 
     def __post_init__(self) -> None:
         self.node_type = "binary_op"
@@ -107,10 +101,9 @@ class BinaryOpNode(ASTNode):
 
 @dataclass
 class AttributeNode(ASTNode):
-    """Represents an attribute access (e.g., obj.attr)."""
-
-    object: ASTNode  # The object being accessed
-    attribute: str  # The attribute name
+    """Represents attribute access (e.g., obj.attr)."""
+    value: Optional["ASTNode"] = None
+    attr: str = ""
 
     def __post_init__(self) -> None:
         self.node_type = "attribute"
@@ -130,5 +123,3 @@ def walk_ast(node: ASTNode) -> List[ASTNode]:
     for child in node.children:
         result.extend(walk_ast(child))
     return result
-
-

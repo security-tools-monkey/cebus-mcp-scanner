@@ -1,3 +1,7 @@
+"""
+Rule framework: Rule interface, metadata, ScanContext, and analyzer contract for rule execution.
+"""
+
 from __future__ import annotations
 
 import abc
@@ -5,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from ..settings import ScanMode, Severity
-from ..types import Finding
+from ..core_types import Finding
 
 if TYPE_CHECKING:
     from ..config import ScannerConfig

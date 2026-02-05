@@ -1,3 +1,7 @@
+"""
+Lightweight logger used throughout the scanner with verbosity control.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

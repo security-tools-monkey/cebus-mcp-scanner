@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Iterable, TextIO
 
-from ..types import Finding
+from ..core_types import Finding
 
 
 def generate_json(findings: Iterable[Finding]) -> str:

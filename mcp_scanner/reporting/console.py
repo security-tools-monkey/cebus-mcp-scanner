@@ -5,7 +5,7 @@ from typing import Iterable
 from rich.console import Console
 from rich.table import Table
 
-from ..types import Finding
+from ..core_types import Finding
 
 
 def render_console(findings: Iterable[Finding]) -> None:

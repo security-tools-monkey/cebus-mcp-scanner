@@ -65,7 +65,7 @@ HTTP_CLIENT_PATTERNS: Dict[str, List[str]] = {
         "httpx.request",
         "urllib.urlopen",
         "urllib.request.urlopen",
-    ],
+    ], # TODO: sessions
     "javascript": [
         "fetch",
         "axios.get",
