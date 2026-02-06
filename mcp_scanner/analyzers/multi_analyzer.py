@@ -101,7 +101,7 @@ class MultiLanguageAnalyzer:
             for path in analyzer.iter_source_files():
                 try:
                     yield analyzer.load_source_file(path)
-                except Exception as e:
+                except Exception as e: # TODO: check specific exception type
                     self.logger.debug(f"Error loading {path}: {e}")
                     continue
 

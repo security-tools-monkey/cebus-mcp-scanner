@@ -11,6 +11,7 @@ from .multi_analyzer import MultiLanguageAnalyzer
 from ..ast_common import SourceFile
 from ..rules.base import Analyzer
 
+import ast
 
 class AnalyzerAdapter(Analyzer):
     """
@@ -80,9 +81,16 @@ class AnalyzerAdapter(Analyzer):
             content: str
             tree: any  # Unified AST tree (or Python AST if available)
 
+        legacy_tree = (
+            source_file.raw_ast
+            if isinstance(source_file.raw_ast, ast.AST)
+            else source_file.tree
+        )
+
         return PythonFile(
             path=source_file.path,
             content=source_file.content,
-            tree=source_file.tree,  # Unified AST - old rules will need to adapt
+            # tree=source_file.tree,  # Unified AST - old rules will need to adapt
+            tree=legacy_tree,
         )
 

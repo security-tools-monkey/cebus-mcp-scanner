@@ -45,6 +45,7 @@ class PythonAnalyzer(LanguageAnalyzer):
         try:
             py_tree = ast.parse(content, filename=path)
             unified_tree = PythonASTMapper.map_module(py_tree)
+            pass
         except SyntaxError:
             # On syntax error, create a minimal tree
             unified_tree = ASTNode(

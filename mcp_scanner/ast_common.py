@@ -28,7 +28,7 @@ class SourceFile:
 class ASTNode:
     """Base class for all AST nodes."""
 
-    node_type: str  # "call", "literal", "variable", "import", "assignment", etc.
+    node_type: str = ""  # "call", "literal", "variable", "import", "assignment", etc. Filled by specific node types in __post_init__ or explicitly for generic nodes
     line: int | None = None
     column: int | None = None
     parent: Optional["ASTNode"] = None
@@ -73,6 +73,7 @@ class ImportNode(ASTNode):
     """Represents an import statement."""
     module: str = ""
     imports: list[str] = field(default_factory=list)
+    alias: str | None = None
 
     def __post_init__(self) -> None:
         self.node_type = "import"

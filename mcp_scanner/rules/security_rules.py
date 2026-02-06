@@ -21,6 +21,7 @@ from .base import Rule, RuleMetadata, ScanContext
 
 _HTTP_CLIENT_NAMES = {
     "get",
+    "get",
     "post",
     "put",
     "delete",

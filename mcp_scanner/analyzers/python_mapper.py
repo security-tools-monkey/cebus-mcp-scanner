@@ -143,8 +143,8 @@ class PythonASTMapper:
         """Map Python Attribute node to AttributeNode."""
         obj_node = PythonASTMapper.map_node(py_node.value)
         attr_node = AttributeNode(
-            object=obj_node,
-            attribute=py_node.attr,
+            value=obj_node,
+            attr=py_node.attr,
             line=line,
             column=col,
             parent=parent,
