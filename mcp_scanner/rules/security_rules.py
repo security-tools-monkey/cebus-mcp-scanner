@@ -4,7 +4,6 @@ Built-in security rules and the all_rules() registry used by Scanner by default.
 
 from __future__ import annotations
 
-import ast
 import re
 from pathlib import Path
 from typing import Iterable, List
@@ -14,26 +13,24 @@ from ..patterns import (
     SHELL_EXECUTION_PATTERNS,
     HTTP_CLIENT_PATTERNS,
     SECRET_PATTERNS,
+    FILE_ACCESS_PATTERNS,
+    DANGEROUS_URL_SCHEMES,
 )
 from ..settings import ScanMode, Severity, SeverityLevel
 from ..core_types import Finding
 from .base import Rule, RuleMetadata, ScanContext
 
-_HTTP_CLIENT_NAMES = {
-    "get",
-    "get",
-    "post",
-    "put",
-    "delete",
-    "head",
-    "options",
-    "patch",
-    "request",
-}
+def _relative_path(source_file_path: Path, project_root: str) -> str:
+    return str(source_file_path.relative_to(Path(project_root)))
 
-_SECRET_REGEX = re.compile(
-    r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*['\"][A-Za-z0-9_\-]{12,}['\"]"
-)
+
+def _is_string_literal(node: object) -> bool:
+    return isinstance(node, LiteralNode) and isinstance(node.value, str)
+
+
+def _matches_any(callee: str, patterns: Iterable[str]) -> bool:
+    callee_lower = callee.lower()
+    return any(pattern.lower() in callee_lower for pattern in patterns)
 
 
 class DangerousShellExecutionRule(Rule):
@@ -62,69 +59,26 @@ class DangerousShellExecutionRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        # Try new multi-language interface first
-        try:
-            for source_file in analyzer.iter_source_files():
-                language_patterns = SHELL_EXECUTION_PATTERNS.get(source_file.language, [])
-                if not language_patterns:
-                    continue
+        for source_file in analyzer.iter_source_files():
+            language_patterns = SHELL_EXECUTION_PATTERNS.get(source_file.language, [])
+            if not language_patterns:
+                continue
 
-                for node in walk_ast(source_file.tree):
-                    if isinstance(node, CallNode):
-                        if node.callee in language_patterns:
-                            yield Finding(
-                                rule_id=self.metadata.rule_id,
-                                message=f"Shell execution via `{node.callee}`.",
-                                file_path=str(source_file.path.relative_to(context.project_root)),
-                                line=node.line,
-                                category=self.metadata.category,
-                                severity=severity,
-                                why_it_matters="Arbitrary shell commands in shared environments enable RCE.",
-                                recommendation="Validate input, restrict commands, or remove shell access for shared deployments.",
-                                owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                ml_top10_ids=self.metadata.ml_top10_ids,
-                            )
-        except (AttributeError, TypeError):
-            # Fallback to legacy Python-only interface
-            for path_str in analyzer.iter_python_files():
-                python_file = analyzer.load_python_file(path_str)
-                for node in ast.walk(python_file.tree):
-                    if isinstance(node, ast.Call):
-                        target_name = self._get_full_name(node.func)
-                        if target_name in {
-                            "os.system",
-                            "os.popen",
-                            "subprocess.call",
-                            "subprocess.Popen",
-                            "subprocess.run",
-                            "subprocess.check_call",
-                            "subprocess.check_output",
-                        }:
-                            yield Finding(
-                                rule_id=self.metadata.rule_id,
-                                message=f"Shell execution via `{target_name}`.",
-                                file_path=str(Path(path_str).relative_to(context.project_root)),
-                                line=getattr(node, "lineno", None),
-                                category=self.metadata.category,
-                                severity=severity,
-                                why_it_matters="Arbitrary shell commands in shared environments enable RCE.",
-                                recommendation="Validate input, restrict commands, or remove shell access for shared deployments.",
-                                owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                ml_top10_ids=self.metadata.ml_top10_ids,
-                            )
-
-    @staticmethod
-    def _get_full_name(node: ast.AST) -> str | None:
-        if isinstance(node, ast.Attribute):
-            value = DangerousShellExecutionRule._get_full_name(node.value)
-            if value:
-                return f"{value}.{node.attr}"
-            return node.attr
-        if isinstance(node, ast.Name):
-            return node.id
-        return None
+            for node in walk_ast(source_file.tree):
+                if isinstance(node, CallNode) and node.callee in language_patterns:
+                    yield Finding(
+                        rule_id=self.metadata.rule_id,
+                        message=f"Shell execution via `{node.callee}`.",
+                        file_path=_relative_path(source_file.path, context.project_root),
+                        line=node.line,
+                        category=self.metadata.category,
+                        severity=severity,
+                        why_it_matters="Arbitrary shell commands in shared environments enable RCE.",
+                        recommendation="Validate input, restrict commands, or remove shell access for shared deployments.",
+                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                        owasp_top10_ids=self.metadata.owasp_top10_ids,
+                        ml_top10_ids=self.metadata.ml_top10_ids,
+                    )
 
 
 class UserControlledHttpRule(Rule):
@@ -153,86 +107,40 @@ class UserControlledHttpRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        # Try new multi-language interface first
-        try:
-            for source_file in analyzer.iter_source_files():
-                language_patterns = HTTP_CLIENT_PATTERNS.get(source_file.language, [])
-                if not language_patterns:
+        for source_file in analyzer.iter_source_files():
+            language_patterns = HTTP_CLIENT_PATTERNS.get(source_file.language, [])
+            if not language_patterns:
+                continue
+
+            for node in walk_ast(source_file.tree):
+                if not isinstance(node, CallNode):
                     continue
 
-                for node in walk_ast(source_file.tree):
-                    if not isinstance(node, CallNode):
-                        continue
+                # Check if callee matches HTTP client patterns
+                if not _matches_any(node.callee, language_patterns):
+                    continue
 
-                    if "." not in node.callee:
-                        continue
+                # Check if URL argument is dynamic (not a constant)
+                if not node.arguments:
+                    continue
 
-                    # Check if callee matches HTTP client patterns
-                    callee_lower = node.callee.lower()
-                    if not any(pattern.lower() in callee_lower for pattern in language_patterns):
-                        continue
+                url_arg = node.arguments[0]
+                if _is_string_literal(url_arg):
+                    continue  # constant strings are acceptable base case
 
-                    # Check if URL argument is dynamic (not a constant)
-                    if not node.arguments:
-                        continue
-
-                    url_arg = node.arguments[0]
-                    if isinstance(url_arg, LiteralNode) and isinstance(url_arg.value, str):
-                        continue  # constant strings are acceptable base case
-
-                    yield Finding(
-                        rule_id=self.metadata.rule_id,
-                        message=f"Dynamic URL used in `{node.callee}` call.",
-                        file_path=str(source_file.path.relative_to(context.project_root)),
-                        line=node.line,
-                        category=self.metadata.category,
-                        severity=severity,
-                        why_it_matters="Dynamic URLs without allow-lists expose internal services to SSRF.",
-                        recommendation="Validate URLs against an allow-list and restrict protocols/hosts.",
-                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                        owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
-                    )
-        except (AttributeError, TypeError):
-            # Fallback to legacy Python-only interface
-            for path_str in analyzer.iter_python_files():
-                python_file = analyzer.load_python_file(path_str)
-                for node in ast.walk(python_file.tree):
-                    if not isinstance(node, ast.Call):
-                        continue
-                    target_name = DangerousShellExecutionRule._get_full_name(node.func)
-                    if not target_name:
-                        continue
-
-                    if "." not in target_name:
-                        continue
-
-                    module, name = target_name.rsplit(".", 1)
-                    if name.lower() not in _HTTP_CLIENT_NAMES:
-                        continue
-                    if module not in {"requests", "httpx"}:
-                        continue
-
-                    if not node.args:
-                        continue
-
-                    url_arg = node.args[0]
-                    if isinstance(url_arg, ast.Constant) and isinstance(url_arg.value, str):
-                        continue  # constant strings are acceptable base case
-
-                    yield Finding(
-                        rule_id=self.metadata.rule_id,
-                        message=f"Dynamic URL used in `{target_name}` call.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
-                        line=getattr(node, "lineno", None),
-                        category=self.metadata.category,
-                        severity=severity,
-                        why_it_matters="Dynamic URLs without allow-lists expose internal services to SSRF.",
-                        recommendation="Validate URLs against an allow-list and restrict protocols/hosts.",
-                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                        owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
-                    )
+                yield Finding(
+                    rule_id=self.metadata.rule_id,
+                    message=f"Dynamic URL used in `{node.callee}` call.",
+                    file_path=_relative_path(source_file.path, context.project_root),
+                    line=node.line,
+                    category=self.metadata.category,
+                    severity=severity,
+                    why_it_matters="Dynamic URLs without allow-lists expose internal services to SSRF.",
+                    recommendation="Validate URLs against an allow-list and restrict protocols/hosts.",
+                    owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                    owasp_top10_ids=self.metadata.owasp_top10_ids,
+                    ml_top10_ids=self.metadata.ml_top10_ids,
+                )
 
 
 class RepositorySecretRule(Rule):
@@ -257,40 +165,18 @@ class RepositorySecretRule(Rule):
 
     def scan(self, context: ScanContext) -> Iterable[Finding]:
         severity = self.severity_for_mode(context.mode)
-        
-        # Try new multi-language interface first
-        try:
-            for source_file in context.analyzer.iter_source_files():
-                # Regex-based rules work across all languages
-                for pattern_str in SECRET_PATTERNS:
-                    pattern = re.compile(pattern_str)
-                    matches = list(pattern.finditer(source_file.content))
-                    for match in matches:
-                        line_no = source_file.content[: match.start()].count("\n") + 1
-                        yield Finding(
-                            rule_id=self.metadata.rule_id,
-                            message=f"Potential secret discovered: `{match.group(0).split('=')[0].strip()}`.",
-                            file_path=str(source_file.path.relative_to(context.project_root)),
-                            line=line_no,
-                            category=self.metadata.category,
-                            severity=severity,
-                            why_it_matters="Secrets in source expose credentials if repository is shared.",
-                            recommendation="Use environment variables or secret storage; rotate exposed credentials.",
-                            owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                            owasp_top10_ids=self.metadata.owasp_top10_ids,
-                            ml_top10_ids=self.metadata.ml_top10_ids,
-                        )
-        except (AttributeError, TypeError):
-            # Fallback to legacy Python-only interface
-            for path_str in context.analyzer.iter_python_files():
-                content = context.analyzer.open_file(path_str)
-                matches = list(_SECRET_REGEX.finditer(content))
+
+        for source_file in context.analyzer.iter_source_files():
+            # Regex-based rules work across all languages
+            for pattern_str in SECRET_PATTERNS:
+                pattern = re.compile(pattern_str)
+                matches = list(pattern.finditer(source_file.content))
                 for match in matches:
-                    line_no = content[: match.start()].count("\n") + 1
+                    line_no = source_file.content[: match.start()].count("\n") + 1
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message=f"Potential secret discovered: `{match.group(0).split('=')[0].strip()}`.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
+                        file_path=_relative_path(source_file.path, context.project_root),
                         line=line_no,
                         category=self.metadata.category,
                         severity=severity,
@@ -329,34 +215,50 @@ class UnconstrainedToolExecutionRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content
-            
-            # Look for patterns like: parse_response() -> subprocess/requests
-            # This is heuristic-based - look for function calls that might chain LLM output to tools
-            for node in ast.walk(python_file.tree):
-                if isinstance(node, ast.Call):
-                    func_name = DangerousShellExecutionRule._get_full_name(node.func)
-                    if func_name and any(x in func_name.lower() for x in ["parse", "extract", "response", "output"]):
-                        # Check if result is used in dangerous calls
-                        for child in ast.walk(node):
-                            if isinstance(child, ast.Call):
-                                child_name = DangerousShellExecutionRule._get_full_name(child.func)
-                                if child_name and any(x in child_name for x in ["subprocess", "requests", "httpx", "os.system"]):
-                                    yield Finding(
-                                        rule_id=self.metadata.rule_id,
-                                        message=f"Potential unconstrained tool execution: `{func_name}` result may flow to `{child_name}`.",
-                                        file_path=str(Path(path_str).relative_to(context.project_root)),
-                                        line=getattr(node, "lineno", None),
-                                        category=self.metadata.category,
-                                        severity=severity,
-                                        why_it_matters="LLM output used directly in tool calls enables prompt injection attacks.",
-                                        recommendation="Validate and sanitize model output before using in tool invocations.",
-                                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                        owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                        ml_top10_ids=self.metadata.ml_top10_ids,
-                                    )
+        parse_keywords = ("parse", "extract", "response", "output")
+
+        for source_file in analyzer.iter_source_files():
+            language_patterns = (
+                SHELL_EXECUTION_PATTERNS.get(source_file.language, [])
+                + HTTP_CLIENT_PATTERNS.get(source_file.language, [])
+            )
+
+            if not language_patterns:
+                continue
+
+            parse_calls = [
+                node
+                for node in walk_ast(source_file.tree)
+                if isinstance(node, CallNode)
+                and any(keyword in node.callee.lower() for keyword in parse_keywords)
+            ]
+
+            if not parse_calls:
+                continue
+
+            risky_calls = [
+                node
+                for node in walk_ast(source_file.tree)
+                if isinstance(node, CallNode) and _matches_any(node.callee, language_patterns)
+            ]
+
+            if not risky_calls:
+                continue
+
+            for node in parse_calls:
+                yield Finding(
+                    rule_id=self.metadata.rule_id,
+                    message="Potential unconstrained tool execution: model output parsing may flow into tool calls.",
+                    file_path=_relative_path(source_file.path, context.project_root),
+                    line=node.line,
+                    category=self.metadata.category,
+                    severity=severity,
+                    why_it_matters="LLM output used directly in tool calls enables prompt injection attacks.",
+                    recommendation="Validate and sanitize model output before using in tool invocations.",
+                    owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                    owasp_top10_ids=self.metadata.owasp_top10_ids,
+                    ml_top10_ids=self.metadata.ml_top10_ids,
+                )
 
 
 class MissingGuardrailsRule(Rule):
@@ -387,9 +289,8 @@ class MissingGuardrailsRule(Rule):
         severity = self.severity_for_mode(context.mode)
 
         # Look for tool definitions without constraints
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content.lower()
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content.lower()
             
             # Heuristic: if we see tool definitions but no guard keywords
             has_tools = any(x in content for x in ["@tool", "def tool", "register_tool", "mcp_tool"])
@@ -402,7 +303,7 @@ class MissingGuardrailsRule(Rule):
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message="Tool definitions found without apparent guardrails or constraints.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
+                        file_path=_relative_path(source_file.path, context.project_root),
                         line=None,
                         category=self.metadata.category,
                         severity=severity,
@@ -441,9 +342,8 @@ class SystemPromptLeakageRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content
             
             # Look for patterns that might leak prompts/config
             leak_patterns = [
@@ -465,7 +365,7 @@ class SystemPromptLeakageRule(Rule):
                         yield Finding(
                             rule_id=self.metadata.rule_id,
                             message=f"{desc} may be exposed in response: `{match.group(0)}`.",
-                            file_path=str(Path(path_str).relative_to(context.project_root)),
+                            file_path=_relative_path(source_file.path, context.project_root),
                             line=line_no,
                             category=self.metadata.category,
                             severity=severity,
@@ -504,9 +404,8 @@ class OverLoggingRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content
             
             # Look for logging of sensitive patterns
             sensitive_patterns = [
@@ -525,7 +424,7 @@ class OverLoggingRule(Rule):
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message=f"{desc} may be logged: `{match.group(0)}`.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
+                        file_path=_relative_path(source_file.path, context.project_root),
                         line=line_no,
                         category=self.metadata.category,
                         severity=severity,
@@ -567,32 +466,44 @@ class UnredactedInternalUrlsRule(Rule):
         # RFC1918 private IP ranges
         internal_ip_pattern = re.compile(r"(?:10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|192\.168\.)")
         
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content
-            
-            # Look for internal IPs or localhost in string literals that might be returned
-            for node in ast.walk(python_file.tree):
-                if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                    if internal_ip_pattern.search(node.value) or "localhost" in node.value.lower() or "127.0.0.1" in node.value:
-                        # Check if it's in a return/response context
-                        parent = getattr(node, "parent", None)
-                        if parent:
-                            parent_str = ast.unparse(parent) if hasattr(ast, "unparse") else str(parent)
-                            if any(x in parent_str for x in ["return", "response", "json"]):
-                                yield Finding(
-                                    rule_id=self.metadata.rule_id,
-                                    message=f"Internal URL/IP may be exposed: `{node.value[:50]}`.",
-                                    file_path=str(Path(path_str).relative_to(context.project_root)),
-                                    line=getattr(node, "lineno", None),
-                                    category=self.metadata.category,
-                                    severity=severity,
-                                    why_it_matters="Internal URLs in responses reveal network topology to attackers.",
-                                    recommendation="Redact internal URLs and IPs in responses or use external-facing endpoints.",
-                                    owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                    owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                    ml_top10_ids=self.metadata.ml_top10_ids,
-                                )
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content
+
+            for match in re.finditer(r"(localhost|127\.0\.0\.1)", content, re.IGNORECASE):
+                line_no = content[:match.start()].count("\n") + 1
+                line = content.splitlines()[line_no - 1] if line_no <= content.count("\n") + 1 else ""
+                if any(x in line.lower() for x in ["return", "response", "json", "reply"]):
+                    yield Finding(
+                        rule_id=self.metadata.rule_id,
+                        message=f"Internal URL/IP may be exposed: `{match.group(0)}`.",
+                        file_path=_relative_path(source_file.path, context.project_root),
+                        line=line_no,
+                        category=self.metadata.category,
+                        severity=severity,
+                        why_it_matters="Internal URLs in responses reveal network topology to attackers.",
+                        recommendation="Redact internal URLs and IPs in responses or use external-facing endpoints.",
+                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                        owasp_top10_ids=self.metadata.owasp_top10_ids,
+                        ml_top10_ids=self.metadata.ml_top10_ids,
+                    )
+
+            for match in internal_ip_pattern.finditer(content):
+                line_no = content[:match.start()].count("\n") + 1
+                line = content.splitlines()[line_no - 1] if line_no <= content.count("\n") + 1 else ""
+                if any(x in line.lower() for x in ["return", "response", "json", "reply"]):
+                    yield Finding(
+                        rule_id=self.metadata.rule_id,
+                        message=f"Internal URL/IP may be exposed: `{match.group(0)}`.",
+                        file_path=_relative_path(source_file.path, context.project_root),
+                        line=line_no,
+                        category=self.metadata.category,
+                        severity=severity,
+                        why_it_matters="Internal URLs in responses reveal network topology to attackers.",
+                        recommendation="Redact internal URLs and IPs in responses or use external-facing endpoints.",
+                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                        owasp_top10_ids=self.metadata.owasp_top10_ids,
+                        ml_top10_ids=self.metadata.ml_top10_ids,
+                    )
 
 
 class ArbitraryPortProtocolRule(Rule):
@@ -622,34 +533,36 @@ class ArbitraryPortProtocolRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        dangerous_schemes = {"file", "ftp", "gopher", "ldap", "jar"}
-        
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            
-            for node in ast.walk(python_file.tree):
-                if isinstance(node, ast.Call):
-                    target_name = DangerousShellExecutionRule._get_full_name(node.func)
-                    if target_name and any(x in target_name for x in ["requests", "httpx", "urllib", "urlopen"]):
-                        # Check for dangerous schemes in URL arguments
-                        for arg in node.args:
-                            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                                url_lower = arg.value.lower()
-                                for scheme in dangerous_schemes:
-                                    if url_lower.startswith(f"{scheme}://"):
-                                        yield Finding(
-                                            rule_id=self.metadata.rule_id,
-                                            message=f"Dangerous URL scheme detected: `{scheme}://` in `{target_name}` call.",
-                                            file_path=str(Path(path_str).relative_to(context.project_root)),
-                                            line=getattr(node, "lineno", None),
-                                            category=self.metadata.category,
-                                            severity=severity,
-                                            why_it_matters="Arbitrary URL schemes enable SSRF and local file access attacks.",
-                                            recommendation="Restrict URL schemes to http/https and validate hostnames.",
-                                            owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                            owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                            ml_top10_ids=self.metadata.ml_top10_ids,
-                                        )
+        for source_file in analyzer.iter_source_files():
+            language_patterns = HTTP_CLIENT_PATTERNS.get(source_file.language, [])
+            if not language_patterns:
+                continue
+
+            for node in walk_ast(source_file.tree):
+                if not isinstance(node, CallNode):
+                    continue
+
+                if not _matches_any(node.callee, language_patterns):
+                    continue
+
+                for arg in node.arguments:
+                    if _is_string_literal(arg):
+                        url_lower = arg.value.lower()
+                        for scheme in DANGEROUS_URL_SCHEMES:
+                            if url_lower.startswith(scheme):
+                                yield Finding(
+                                    rule_id=self.metadata.rule_id,
+                                    message=f"Dangerous URL scheme detected: `{scheme}` in `{node.callee}` call.",
+                                    file_path=_relative_path(source_file.path, context.project_root),
+                                    line=node.line,
+                                    category=self.metadata.category,
+                                    severity=severity,
+                                    why_it_matters="Arbitrary URL schemes enable SSRF and local file access attacks.",
+                                    recommendation="Restrict URL schemes to http/https and validate hostnames.",
+                                    owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                                    owasp_top10_ids=self.metadata.owasp_top10_ids,
+                                    ml_top10_ids=self.metadata.ml_top10_ids,
+                                )
 
 
 class ArbitraryFileAccessRule(Rule):
@@ -679,32 +592,35 @@ class ArbitraryFileAccessRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            
-            for node in ast.walk(python_file.tree):
-                if isinstance(node, ast.Call):
-                    target_name = DangerousShellExecutionRule._get_full_name(node.func)
-                    if target_name in {"open", "Path", "pathlib.Path"}:
-                        # Check if path argument is not a constant
-                        if node.args:
-                            path_arg = node.args[0]
-                            if not (isinstance(path_arg, ast.Constant) and isinstance(path_arg.value, str)):
-                                # Dynamic path - check if it's from user input
-                                # Heuristic: if it's not a constant, it might be user-controlled
-                                yield Finding(
-                                    rule_id=self.metadata.rule_id,
-                                    message=f"Dynamic file path used in `{target_name}` call.",
-                                    file_path=str(Path(path_str).relative_to(context.project_root)),
-                                    line=getattr(node, "lineno", None),
-                                    category=self.metadata.category,
-                                    severity=severity,
-                                    why_it_matters="Arbitrary file paths enable path traversal attacks and unauthorized file access.",
-                                    recommendation="Validate and restrict file paths using allow-lists or chroot-like constraints.",
-                                    owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                    owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                    ml_top10_ids=self.metadata.ml_top10_ids,
-                                )
+        for source_file in analyzer.iter_source_files():
+            language_patterns = FILE_ACCESS_PATTERNS.get(source_file.language, [])
+            if not language_patterns:
+                continue
+
+            for node in walk_ast(source_file.tree):
+                if not isinstance(node, CallNode):
+                    continue
+
+                if not _matches_any(node.callee, language_patterns):
+                    continue
+
+                if node.arguments:
+                    path_arg = node.arguments[0]
+                    if not _is_string_literal(path_arg):
+                        # Dynamic path - heuristic: non-constant could be user-controlled
+                        yield Finding(
+                            rule_id=self.metadata.rule_id,
+                            message=f"Dynamic file path used in `{node.callee}` call.",
+                            file_path=_relative_path(source_file.path, context.project_root),
+                            line=node.line,
+                            category=self.metadata.category,
+                            severity=severity,
+                            why_it_matters="Arbitrary file paths enable path traversal attacks and unauthorized file access.",
+                            recommendation="Validate and restrict file paths using allow-lists or chroot-like constraints.",
+                            owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                            owasp_top10_ids=self.metadata.owasp_top10_ids,
+                            ml_top10_ids=self.metadata.ml_top10_ids,
+                        )
 
 
 class NoAuthenticationRule(Rule):
@@ -734,9 +650,8 @@ class NoAuthenticationRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content.lower()
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content.lower()
             
             # Look for endpoint definitions without auth
             has_endpoints = any(x in content for x in ["@app.route", "@router", "def handle", "async def", "endpoint"])
@@ -749,7 +664,7 @@ class NoAuthenticationRule(Rule):
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message="Powerful endpoint found without apparent authentication checks.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
+                        file_path=_relative_path(source_file.path, context.project_root),
                         line=None,
                         category=self.metadata.category,
                         severity=severity,
@@ -788,9 +703,8 @@ class MissingTenantIsolationRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content.lower()
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content.lower()
             
             # Look for storage operations without tenant context
             has_storage = any(x in content for x in ["bucket", "database", "storage", "s3", "gcs", "azure"])
@@ -800,7 +714,7 @@ class MissingTenantIsolationRule(Rule):
                 yield Finding(
                     rule_id=self.metadata.rule_id,
                     message="Storage operations found without apparent tenant scoping.",
-                    file_path=str(Path(path_str).relative_to(context.project_root)),
+                    file_path=_relative_path(source_file.path, context.project_root),
                     line=None,
                     category=self.metadata.category,
                     severity=severity,
@@ -847,9 +761,8 @@ class HardcodedTrustedUsersRule(Rule):
         ]
         
         import re
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content
             
             for pattern, desc in trusted_patterns:
                 matches = list(re.finditer(pattern, content, re.IGNORECASE))
@@ -858,7 +771,7 @@ class HardcodedTrustedUsersRule(Rule):
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message=f"{desc} detected: `{match.group(0)}`.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
+                        file_path=_relative_path(source_file.path, context.project_root),
                         line=line_no,
                         category=self.metadata.category,
                         severity=severity,
@@ -897,9 +810,8 @@ class InsecureHttpRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content
             
             # Look for http:// URLs (not https://)
             import re
@@ -909,7 +821,7 @@ class InsecureHttpRule(Rule):
                 yield Finding(
                     rule_id=self.metadata.rule_id,
                     message=f"Insecure HTTP URL detected: `{match.group(0)[:50]}`.",
-                    file_path=str(Path(path_str).relative_to(context.project_root)),
+                    file_path=_relative_path(source_file.path, context.project_root),
                     line=line_no,
                     category=self.metadata.category,
                     severity=severity,
@@ -948,9 +860,8 @@ class PermissiveCorsRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content.lower()
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content.lower()
             
             # Look for permissive CORS patterns
             if "cors" in content or "cross-origin" in content:
@@ -959,7 +870,7 @@ class PermissiveCorsRule(Rule):
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message="Overly permissive CORS: wildcard with credentials.",
-                        file_path=str(Path(path_str).relative_to(context.project_root)),
+                        file_path=_relative_path(source_file.path, context.project_root),
                         line=line_no,
                         category=self.metadata.category,
                         severity=severity,
@@ -998,34 +909,33 @@ class NoTimeoutRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            
-            for node in ast.walk(python_file.tree):
-                if isinstance(node, ast.Call):
-                    target_name = DangerousShellExecutionRule._get_full_name(node.func)
-                    if target_name and any(x in target_name for x in ["requests", "httpx"]):
-                        # Check if timeout is in kwargs
-                        has_timeout = False
-                        for keyword in node.keywords:
-                            if keyword.arg == "timeout":
-                                has_timeout = True
-                                break
-                        
-                        if not has_timeout:
-                            yield Finding(
-                                rule_id=self.metadata.rule_id,
-                                message=f"HTTP call without timeout: `{target_name}`.",
-                                file_path=str(Path(path_str).relative_to(context.project_root)),
-                                line=getattr(node, "lineno", None),
-                                category=self.metadata.category,
-                                severity=severity,
-                                why_it_matters="HTTP calls without timeouts can hang indefinitely, enabling DoS attacks.",
-                                recommendation="Add timeout parameter to all HTTP calls.",
-                                owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
-                                owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                ml_top10_ids=self.metadata.ml_top10_ids,
-                            )
+        for source_file in analyzer.iter_source_files():
+            language_patterns = HTTP_CLIENT_PATTERNS.get(source_file.language, [])
+            if not language_patterns:
+                continue
+
+            for node in walk_ast(source_file.tree):
+                if not isinstance(node, CallNode):
+                    continue
+
+                if not _matches_any(node.callee, language_patterns):
+                    continue
+
+                has_timeout = "timeout" in node.keyword_arguments
+                if not has_timeout:
+                    yield Finding(
+                        rule_id=self.metadata.rule_id,
+                        message=f"HTTP call without timeout: `{node.callee}`.",
+                        file_path=_relative_path(source_file.path, context.project_root),
+                        line=node.line,
+                        category=self.metadata.category,
+                        severity=severity,
+                        why_it_matters="HTTP calls without timeouts can hang indefinitely, enabling DoS attacks.",
+                        recommendation="Add timeout parameter to all HTTP calls.",
+                        owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
+                        owasp_top10_ids=self.metadata.owasp_top10_ids,
+                        ml_top10_ids=self.metadata.ml_top10_ids,
+                    )
 
 
 class NoInputSizeLimitRule(Rule):
@@ -1055,9 +965,8 @@ class NoInputSizeLimitRule(Rule):
         analyzer = context.analyzer
         severity = self.severity_for_mode(context.mode)
 
-        for path_str in analyzer.iter_python_files():
-            python_file = analyzer.load_python_file(path_str)
-            content = python_file.content.lower()
+        for source_file in analyzer.iter_source_files():
+            content = source_file.content.lower()
             
             # Look for file processing operations
             has_file_ops = any(x in content for x in ["read(", "open(", "upload", "process_file"])
@@ -1067,7 +976,7 @@ class NoInputSizeLimitRule(Rule):
                 yield Finding(
                     rule_id=self.metadata.rule_id,
                     message="File processing operation found without apparent size limits.",
-                    file_path=str(Path(path_str).relative_to(context.project_root)),
+                    file_path=_relative_path(source_file.path, context.project_root),
                     line=None,
                     category=self.metadata.category,
                     severity=severity,
@@ -1106,4 +1015,3 @@ def all_rules() -> List[Rule]:
         NoTimeoutRule(),
         NoInputSizeLimitRule(),
     ]
-
