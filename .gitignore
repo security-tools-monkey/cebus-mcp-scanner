@@ -44,8 +44,9 @@ htmlcov/
 *.log
 
 # Mac OS specific
-.DS_Store  # macOS file metadata
+.DS_Store
 
 # Custom folders
 cebus-venv/
 development_requirements/
+/development_docs/
