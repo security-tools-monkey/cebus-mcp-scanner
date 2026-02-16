@@ -20,9 +20,9 @@ ASCII overview:
        │                 └─────────┬────────┘                   │
        │                           │                            │
        │                 ┌─────────▼────────┐        ┌──────────▼──────────┐
-       │                 │ Project Analyzer │        │ Config / Allow Lists│
-       │                 │ - walks sources  │        │ - rule toggles       │
-       │                 │   (multi-lang)   │        │ - severity overrides │
+       │                 │ MultiLanguage    │        │ Config / Allow Lists│
+       │                 │ Analyzer         │        │ - rule toggles       │
+       │                 │ - walks sources  │        │ - severity overrides │
        │                 └─────────┬────────┘        └──────────┬───────────┘
        │                           │                            │
        │                 ┌─────────▼────────┐        ┌──────────▼──────────┐
@@ -44,7 +44,7 @@ flowchart LR
 
     subgraph ScannerCore[Scanner Core]
         Scanner[Scanner\n- loads config\n- constructs ScanContext\n- runs rules]
-        Analyzer[MultiLanguageAnalyzer / ProjectAnalyzer\n- walks source files\n- builds AST]
+        Analyzer[MultiLanguageAnalyzer\n- walks source files\n- builds AST]
         Config[ScannerConfig\n- rule toggles\n- severity overrides\n- allow-lists]
         Rules[Rule set\n- security heuristics]
         Loader[Project loader\n- load_project\n- MCP manifest]
@@ -86,10 +86,7 @@ flowchart TD
     ScannerScan -->|resolve root| LoadProject[loader.project_loader.load_project()]
     LoadProject --> ProjectMeta[ProjectMetadata\n+ MCPManifest]
 
-    ScannerScan -->|init analyzers| AnalyzerSel{use_legacy_analyzer?}
-    AnalyzerSel -->|Yes| LegacyAnalyzer[ProjectAnalyzer (python_analyzer.py)]
-    AnalyzerSel -->|No| MultiAnalyzer[multi_analyzer.MultiLanguageAnalyzer]
-
+    ScannerScan -->|init analyzers| MultiAnalyzer[multi_analyzer.MultiLanguageAnalyzer]
     MultiAnalyzer -->|auto-detect / languages| LangDetect[language_detector.detect_languages()]
 
     ScannerScan -->|build| ScanCtx[ScanContext\n(project_root, mode, analyzer, config)]
@@ -129,7 +126,7 @@ flowchart TD
 ## Component Summary
 
 - `mcp_scanner.loader.project_loader`: resolves project root and extracts MCP manifest context (`ProjectMetadata`) to accompany scan results.
-- `mcp_scanner.analyzers.python_analyzer` / `mcp_scanner.analyzers.multi_analyzer`: walk source files under the target root (excluding common build/venv dirs), return parsed ASTs (Python AST or unified AST) used by rules.
+- `mcp_scanner.analyzers.multi_analyzer`: walks source files under the target root (excluding common build/venv dirs), returns unified ASTs used by rules.
 - `mcp_scanner.rules.base`: defines the `Rule` interface, metadata, and `ScanContext` carrying mode/analyzer/config objects.
 - `mcp_scanner.rules.security_rules`: concrete rule suite covering RCE/SSRF/prompts/auth/transport/resource categories. Each rule inspects AST or raw content to emit `Finding` objects with severity tuned by `ScanMode` (LOCAL vs SHARED).
 - `mcp_scanner.config`: handles enable/disable per rule plus per-mode severity overrides, and allow-lists for future suppression logic.
@@ -141,7 +138,7 @@ flowchart TD
 
 1. **Invocation**: via CLI (Typer command), direct Python API, or MCP action.
 2. **Project Load**: `load_project` resolves the root directory and attempts to parse MCP manifests (`mcp.json`, `mcp.yaml`, package.json, `pyproject.toml`). This metadata accompanies scan results but rules currently operate directly on code.
-3. **Analyzer Setup**: `MultiLanguageAnalyzer` (or legacy `ProjectAnalyzer`) enumerates source files and builds ASTs for rule consumption.
+3. **Analyzer Setup**: `MultiLanguageAnalyzer` enumerates source files and builds ASTs for rule consumption.
 4. **ScanContext Construction**: includes project root, scan mode (`LOCAL` or `SHARED`), analyzer, and active `ScannerConfig`.
 5. **Rule Execution**:
    - Disabled rules are skipped.
@@ -149,4 +146,3 @@ flowchart TD
    - Severity overrides from configuration are applied post-scan, allowing per-mode downgrades/upgrades.
    - Exceptions raised by rules are caught; the scanner emits a synthetic `<RULE>_ERROR` finding so pipelines surface rule health issues.
 6. **Reporting**: Consumers format `FindingsCollection` through console/JSON/SARIF emitters or, in the MCP facade, convert to markdown for chat output.
-

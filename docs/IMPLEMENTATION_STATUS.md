@@ -28,8 +28,7 @@
 
 5. **Updated Analyzer Interface** (`mcp_scanner/rules/base.py`)
    - Extended `Analyzer` base class with new multi-language methods
-   - Maintains backward compatibility with legacy Python-only methods
-   - Legacy methods implemented in terms of new interface
+   - Provides helper methods for Python-only consumers (planned removal in a later cleanup)
 
 ### Phase 2: Python Migration ✅
 
@@ -44,10 +43,8 @@
    - Fully compatible with multi-language system
 
 3. **Updated Scanner** (`mcp_scanner/scanner.py`)
-   - Scanner now uses `MultiLanguageAnalyzer` by default
+   - Scanner uses `MultiLanguageAnalyzer`
    - Added `languages` parameter for explicit language specification
-   - Added `use_legacy_analyzer` flag for backward compatibility
-   - Maintains full backward compatibility
 
 4. **Pattern System** (`mcp_scanner/patterns.py`)
    - Language-specific pattern dictionaries:
@@ -62,12 +59,6 @@
    - `DangerousShellExecutionRule`: Now uses unified AST + patterns
    - `UserControlledHttpRule`: Now uses unified AST + patterns
    - `RepositorySecretRule`: Now works across all languages (regex-based)
-   - All rules maintain backward compatibility with fallback to legacy interface
-
-6. **Legacy Analyzer Updated** (`mcp_scanner/analyzers/python_analyzer.py`)
-   - `ProjectAnalyzer` now implements new interface
-   - Maintains Python AST for legacy rules
-   - Can be used with `use_legacy_analyzer=True`
 
 ## 🔄 Current State
 
@@ -75,15 +66,8 @@
 - ✅ Python scanning with unified AST
 - ✅ Auto-detection of project languages
 - ✅ Multi-language analyzer infrastructure
-- ✅ Backward compatibility with existing rules
 - ✅ Pattern-based rule logic (ready for other languages)
 - ✅ 3 rules refactored as proof of concept
-
-### Backward Compatibility
-- ✅ All existing Python-only rules continue to work
-- ✅ Legacy `ProjectAnalyzer` still functional
-- ✅ Scanner defaults to new system but can use legacy mode
-- ✅ Rules gracefully fall back to legacy interface if needed
 
 ## 📋 Next Steps: Phase 3 & 4
 
@@ -119,10 +103,6 @@ from mcp_scanner.settings import ScanMode
 scanner = Scanner()
 result = scanner.scan("/path/to/project", ScanMode.SHARED)
 
-# Legacy Python-only system
-scanner = Scanner(use_legacy_analyzer=True)
-result = scanner.scan("/path/to/project", ScanMode.SHARED)
-
 # Explicit languages
 scanner = Scanner(languages=["python", "javascript"])
 result = scanner.scan("/path/to/project", ScanMode.SHARED)
@@ -130,12 +110,12 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 
 ## 📝 Notes
 
+- Breaking change (2026-02-16): removed the Python-only analyzer and the `use_legacy_analyzer` flag. The unified multi-language pipeline is now the only supported analysis path.
+
 - The system is designed to be extensible: adding new languages requires implementing `LanguageAnalyzer` and creating a mapper
 - Pattern-based approach makes rules language-agnostic
-- Backward compatibility ensures existing code continues to work during migration
-- Performance impact is minimal: unified AST is created once per file, cached in adapter
+- Performance impact is minimal: unified AST is created once per file by the language analyzer
 
 ## 🐛 Known Issues
 
-- None currently identified. All tests should pass with backward compatibility maintained.
-
+- None currently identified. All tests should pass with the unified pipeline.

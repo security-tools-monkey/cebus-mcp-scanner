@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
 from .analyzers.multi_analyzer import MultiLanguageAnalyzer
-from .analyzers.python_analyzer import ProjectAnalyzer  # Legacy support
 from .config import ScannerConfig
 from .logging_utils import ScanLogger, VerbosityLevel
 from .loader.project_loader import ProjectMetadata, load_project
@@ -34,7 +33,6 @@ class Scanner:
         config: Optional[ScannerConfig] = None,
         logger: Optional[ScanLogger] = None,
         languages: List[str] | None = None,
-        use_legacy_analyzer: bool = False,
     ) -> None:
         """
         Initialize scanner.
@@ -44,31 +42,25 @@ class Scanner:
             config: Scanner configuration
             logger: Optional logger for verbose output
             languages: Explicit list of languages to scan, or None for auto-detect
-            use_legacy_analyzer: If True, use old Python-only analyzer (for backward compatibility)
         """
         self.rules: List[Rule] = list(rules) if rules is not None else all_rules()
         self.config = config or ScannerConfig()
         self.logger = logger or ScanLogger(verbosity=VerbosityLevel.QUIET)
         self.languages = languages
-        self.use_legacy_analyzer = use_legacy_analyzer
 
     def scan(self, path: str, mode: ScanMode) -> ScanResult:
         self.logger.info(f"Starting scan path={path} mode={mode.value}")
         project = load_project(path)
         
-        # Use new multi-language analyzer or legacy Python-only analyzer
-        if self.use_legacy_analyzer:
-            analyzer = ProjectAnalyzer(str(project.root))
-        else:
-            multi_analyzer = MultiLanguageAnalyzer(
-                root=str(project.root),
-                languages=self.languages,
-                logger=self.logger,
-            )
-            analyzer = multi_analyzer
-            supported_langs = multi_analyzer.get_supported_languages()
-            if supported_langs:
-                self.logger.debug(f"Scanning languages: {supported_langs}")
+        multi_analyzer = MultiLanguageAnalyzer(
+            root=str(project.root),
+            languages=self.languages,
+            logger=self.logger,
+        )
+        analyzer = multi_analyzer
+        supported_langs = multi_analyzer.get_supported_languages()
+        if supported_langs:
+            self.logger.debug(f"Scanning languages: {supported_langs}")
         
         context = ScanContext(
             project_root=str(project.root),
