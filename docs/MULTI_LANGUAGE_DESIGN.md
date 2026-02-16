@@ -9,9 +9,8 @@ This document outlines the architectural changes needed to extend the MCP scanne
 ### Current Limitations
 
 1. **Language-Specific Analyzer Interface**
-   - `Analyzer.iter_python_files()` - hardcoded to Python
-   - `Analyzer.load_python_file()` - returns Python AST
-   - Rules directly call these Python-specific methods
+   - Python-only helper methods for file iteration and AST access
+   - Rules directly call these Python-specific helpers
 
 2. **Direct AST Dependency**
    - Rules use Python's `ast` module directly (`ast.Call`, `ast.Constant`, `ast.walk()`)
@@ -26,9 +25,8 @@ This document outlines the architectural changes needed to extend the MCP scanne
 Rules typically follow this pattern:
 
 ```python
-for path_str in analyzer.iter_python_files():
-    python_file = analyzer.load_python_file(path_str)
-    for node in ast.walk(python_file.tree):
+for source_file in analyzer.get_files_by_language("python"):
+    for node in ast.walk(source_file.tree):
         if isinstance(node, ast.Call):
             target_name = self._get_full_name(node.func)
             # Check against Python-specific patterns
@@ -191,9 +189,8 @@ class Analyzer(abc.ABC):
 Before:
 
 ```python
-for path_str in analyzer.iter_python_files():
-    python_file = analyzer.load_python_file(path_str)
-    for node in ast.walk(python_file.tree):
+for source_file in analyzer.get_files_by_language("python"):
+    for node in ast.walk(source_file.tree):
         if isinstance(node, ast.Call):
             target_name = self._get_full_name(node.func)
 ```
@@ -374,9 +371,8 @@ class ScannerConfig:
 ```python
 def scan(self, context: ScanContext) -> Iterable[Finding]:
     analyzer = context.analyzer
-    for path_str in analyzer.iter_python_files():
-        python_file = analyzer.load_python_file(path_str)
-        for node in ast.walk(python_file.tree):
+    for source_file in analyzer.get_files_by_language("python"):
+        for node in ast.walk(source_file.tree):
             if isinstance(node, ast.Call):
                 target_name = self._get_full_name(node.func)
                 if target_name in {"os.system", "subprocess.run"}:
@@ -446,5 +442,4 @@ def scan(self, context: ScanContext) -> Iterable[Finding]:
 2. Create implementation tickets
 3. Set up development environment with tree-sitter dependencies
 4. Begin Phase 1 implementation
-
 

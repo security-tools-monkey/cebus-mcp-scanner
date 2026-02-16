@@ -27,8 +27,8 @@
    - Provides unified interface: `iter_all_source_files()`, `get_files_by_language()`
 
 5. **Updated Analyzer Interface** (`mcp_scanner/rules/base.py`)
-   - Extended `Analyzer` base class with new multi-language methods
-   - Provides helper methods for Python-only consumers (planned removal in a later cleanup)
+   - Unified `Analyzer` base class for multi-language scanning
+   - No Python-only helper methods remain on the interface
 
 ### Phase 2: Python Migration ✅
 
@@ -111,6 +111,7 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 ## 📝 Notes
 
 - Breaking change (2026-02-16): removed the Python-only analyzer and the `use_legacy_analyzer` flag. The unified multi-language pipeline is now the only supported analysis path.
+- Breaking change (2026-02-16): removed Python-only analyzer helper methods from `Analyzer`; external consumers must use the unified API (`iter_source_files()`, `get_files_by_language()`, `open_file()`).
 
 - The system is designed to be extensible: adding new languages requires implementing `LanguageAnalyzer` and creating a mapper
 - Pattern-based approach makes rules language-agnostic

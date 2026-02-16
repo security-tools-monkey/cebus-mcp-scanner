@@ -94,7 +94,7 @@ flowchart TD
 
     RuleLoop -->|skip if disabled| RuleSkip[config.is_rule_enabled(rule_id)]
     RuleLoop -->|run| RuleScan[rule.scan(ScanContext)]
-    RuleScan -->|analyzer.iter_source_files() / iter_python_files()| SrcIter[walk files + AST]
+    RuleScan -->|analyzer.iter_source_files()| SrcIter[walk files + AST]
     SrcIter --> Findings[Finding objects]
 
     RuleScan -->|exception| RuleError[emit <RULE>_ERROR Finding]

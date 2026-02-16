@@ -50,9 +50,6 @@ class ScanContext:
 class Analyzer(abc.ABC):
     """
     Language-agnostic analyzer interface.
-    
-    Supports both new multi-language interface and legacy Python-only interface
-    for backward compatibility.
     """
 
     # New multi-language interface
@@ -84,38 +81,4 @@ class Analyzer(abc.ABC):
     def open_file(self, path: str) -> str:
         """Get raw file content."""
         ...
-
-    # Legacy Python-only interface (for backward compatibility)
-    def iter_python_files(self) -> Iterable[str]:
-        """
-        Legacy method: iterate over Python file paths.
-        Implemented in terms of new interface for compatibility.
-        """
-        for source_file in self.get_files_by_language("python"):
-            yield str(source_file.path)
-
-    def load_python_file(self, path: str):
-        """
-        Legacy method: load Python file.
-        Implemented in terms of new interface for compatibility.
-        """
-        # Find the source file by path
-        for source_file in self.get_files_by_language("python"):
-            if str(source_file.path) == path:
-                # Return a compatible object for old rules
-                from dataclasses import dataclass
-                from pathlib import Path
-
-                @dataclass
-                class PythonFile:
-                    path: Path
-                    content: str
-                    tree: any  # Unified AST tree
-
-                return PythonFile(
-                    path=source_file.path,
-                    content=source_file.content,
-                    tree=source_file.tree,
-                )
-        raise FileNotFoundError(f"Python file not found: {path}")
 
