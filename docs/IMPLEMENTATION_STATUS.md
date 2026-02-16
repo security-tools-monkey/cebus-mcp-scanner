@@ -43,18 +43,13 @@
    - Uses `PythonASTMapper` to produce unified AST
    - Fully compatible with multi-language system
 
-3. **Analyzer Adapter** (`mcp_scanner/analyzers/analyzer_adapter.py`)
-   - `AnalyzerAdapter` wraps `MultiLanguageAnalyzer` for `Analyzer` interface
-   - Provides caching for performance
-   - Enables new system to work with existing rules
-
-4. **Updated Scanner** (`mcp_scanner/scanner.py`)
+3. **Updated Scanner** (`mcp_scanner/scanner.py`)
    - Scanner now uses `MultiLanguageAnalyzer` by default
    - Added `languages` parameter for explicit language specification
    - Added `use_legacy_analyzer` flag for backward compatibility
    - Maintains full backward compatibility
 
-5. **Pattern System** (`mcp_scanner/patterns.py`)
+4. **Pattern System** (`mcp_scanner/patterns.py`)
    - Language-specific pattern dictionaries:
      - `SHELL_EXECUTION_PATTERNS`
      - `HTTP_CLIENT_PATTERNS`
@@ -63,13 +58,13 @@
      - `SECRET_PATTERNS`
    - Ready for JavaScript/TypeScript/Go patterns
 
-6. **Refactored Rules** (Proof of Concept)
+5. **Refactored Rules** (Proof of Concept)
    - `DangerousShellExecutionRule`: Now uses unified AST + patterns
    - `UserControlledHttpRule`: Now uses unified AST + patterns
    - `RepositorySecretRule`: Now works across all languages (regex-based)
    - All rules maintain backward compatibility with fallback to legacy interface
 
-7. **Legacy Analyzer Updated** (`mcp_scanner/analyzers/python_analyzer.py`)
+6. **Legacy Analyzer Updated** (`mcp_scanner/analyzers/python_analyzer.py`)
    - `ProjectAnalyzer` now implements new interface
    - Maintains Python AST for legacy rules
    - Can be used with `use_legacy_analyzer=True`
@@ -143,5 +138,4 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 ## 🐛 Known Issues
 
 - None currently identified. All tests should pass with backward compatibility maintained.
-
 

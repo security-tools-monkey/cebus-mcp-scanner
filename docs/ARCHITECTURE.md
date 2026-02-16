@@ -91,7 +91,6 @@ flowchart TD
     AnalyzerSel -->|No| MultiAnalyzer[multi_analyzer.MultiLanguageAnalyzer]
 
     MultiAnalyzer -->|auto-detect / languages| LangDetect[language_detector.detect_languages()]
-    MultiAnalyzer --> AnalyzerAdapter[AnalyzerAdapter\n(adapts to Analyzer interface)]
 
     ScannerScan -->|build| ScanCtx[ScanContext\n(project_root, mode, analyzer, config)]
     ScannerScan -->|iterate rules| RuleLoop{{for rule in all_rules()}}
@@ -150,5 +149,4 @@ flowchart TD
    - Severity overrides from configuration are applied post-scan, allowing per-mode downgrades/upgrades.
    - Exceptions raised by rules are caught; the scanner emits a synthetic `<RULE>_ERROR` finding so pipelines surface rule health issues.
 6. **Reporting**: Consumers format `FindingsCollection` through console/JSON/SARIF emitters or, in the MCP facade, convert to markdown for chat output.
-
 
