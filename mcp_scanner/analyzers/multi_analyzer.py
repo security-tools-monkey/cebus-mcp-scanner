@@ -13,9 +13,10 @@ from .python_analyzer_v2 import PythonAnalyzer
 from .js_ts_analyzer import JavaScriptAnalyzer, TypeScriptAnalyzer
 from ..ast_common import SourceFile
 from ..logging_utils import ScanLogger, VerbosityLevel
+from ..rules.base import Analyzer
 
 
-class MultiLanguageAnalyzer:
+class MultiLanguageAnalyzer(Analyzer):
     """
     Orchestrates multiple language analyzers.
     
@@ -70,7 +71,7 @@ class MultiLanguageAnalyzer:
             self.logger.debug(f"No analyzer available for language: {language}")
             return None
 
-    def iter_all_source_files(self) -> Iterable[SourceFile]:
+    def iter_source_files(self) -> Iterable[SourceFile]:
         """
         Iterate over all source files across all languages.
         
@@ -85,6 +86,10 @@ class MultiLanguageAnalyzer:
                 except Exception as e:
                     self.logger.debug(f"Error loading {path}: {e}")
                     continue
+
+    def iter_all_source_files(self) -> Iterable[SourceFile]:
+        """Deprecated alias for iter_source_files()."""
+        yield from self.iter_source_files()
 
     def get_files_by_language(self, language: str) -> Iterable[SourceFile]:
         """
@@ -105,8 +110,12 @@ class MultiLanguageAnalyzer:
                     self.logger.debug(f"Error loading {path}: {e}")
                     continue
 
+    def open_file(self, path: str) -> str:
+        """Get raw file content."""
+        with open(path, "r", encoding="utf-8", errors="replace") as handle:
+            return handle.read()
+
     def get_supported_languages(self) -> List[str]:
         """Get list of languages currently being analyzed."""
         return [a.language for a in self.analyzers]
-
 

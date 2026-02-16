@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
-from .analyzers.analyzer_adapter import AnalyzerAdapter
 from .analyzers.multi_analyzer import MultiLanguageAnalyzer
 from .analyzers.python_analyzer import ProjectAnalyzer  # Legacy support
 from .config import ScannerConfig
@@ -66,7 +65,7 @@ class Scanner:
                 languages=self.languages,
                 logger=self.logger,
             )
-            analyzer = AnalyzerAdapter(multi_analyzer)
+            analyzer = multi_analyzer
             supported_langs = multi_analyzer.get_supported_languages()
             if supported_langs:
                 self.logger.debug(f"Scanning languages: {supported_langs}")
@@ -130,4 +129,3 @@ class Scanner:
 
         self.logger.info(f"Scan finished. Total findings: {len(findings)}")
         return ScanResult(findings=findings, project=project)
-

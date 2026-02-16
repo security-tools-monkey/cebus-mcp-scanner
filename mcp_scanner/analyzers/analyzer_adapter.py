@@ -28,7 +28,7 @@ class AnalyzerAdapter(Analyzer):
 
     def iter_source_files(self) -> Iterable[SourceFile]:
         """Iterate over all source files."""
-        for source_file in self.multi_analyzer.iter_all_source_files():
+        for source_file in self.multi_analyzer.iter_source_files():
             # Cache for legacy methods
             self._source_files_cache[str(source_file.path)] = source_file
             yield source_file
@@ -46,7 +46,7 @@ class AnalyzerAdapter(Analyzer):
             return self._source_files_cache[path].content
         
         # Find the analyzer that handles this file
-        for source_file in self.multi_analyzer.iter_all_source_files():
+        for source_file in self.multi_analyzer.iter_source_files():
             if str(source_file.path) == path:
                 self._source_files_cache[path] = source_file
                 return source_file.content
@@ -93,4 +93,3 @@ class AnalyzerAdapter(Analyzer):
             # tree=source_file.tree,  # Unified AST - old rules will need to adapt
             tree=legacy_tree,
         )
-
