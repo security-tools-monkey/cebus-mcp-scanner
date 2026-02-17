@@ -19,6 +19,16 @@ A Python CLI tool that performs **static** and **config-based** security checks 
 pip install -e .
 ```
 
+### Optional JS/TS Support
+
+JavaScript/TypeScript parsing uses optional tree-sitter dependencies. Install the extra to enable it:
+
+```bash
+pip install -e ".[js_ts]"
+```
+
+If the extra is not installed, JS/TS analyzers gracefully return an empty module AST, and scans continue for other languages.
+
 ## Usage
 
 ### Basic Scan
@@ -122,4 +132,3 @@ pytest --cov=mcp_scanner
 ## License
 
 MIT
-

@@ -72,7 +72,7 @@
 ## 📋 Next Steps: Phase 3 & 4
 
 ### Phase 3: JavaScript/TypeScript Support
-1. Install tree-sitter dependencies
+1. Install tree-sitter dependencies (optional extra: `.[js_ts]`)
 2. Create `JavaScriptAnalyzer` using tree-sitter
 3. Create `TypeScriptAnalyzer` using tree-sitter
 4. Create JS/TS → Unified AST mappers
@@ -113,6 +113,7 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 - Breaking change (2026-02-16): removed the Python-only analyzer and the `use_legacy_analyzer` flag. The unified multi-language pipeline is now the only supported analysis path.
 - Breaking change (2026-02-16): removed Python-only analyzer helper methods from `Analyzer`; external consumers must use the unified API (`iter_source_files()`, `get_files_by_language()`, `open_file()`).
 
+- JavaScript/TypeScript parsing is optional. Without the `js_ts` extra, JS/TS analyzers return an empty module AST and the scan continues for other languages.
 - The system is designed to be extensible: adding new languages requires implementing `LanguageAnalyzer` and creating a mapper
 - Pattern-based approach makes rules language-agnostic
 - Performance impact is minimal: unified AST is created once per file by the language analyzer
