@@ -41,7 +41,7 @@ except Exception:  # pragma: no cover
 
 
 JS_EXTENSIONS = {".js", ".jsx", ".mjs", ".cjs"}
-TS_EXTENSIONS = {".ts", ".tsx"}
+TS_EXTENSIONS = {".ts", ".tsx", ".mts", ".cts"}
 
 EXCLUDED_DIRS = {
     ".git",
@@ -524,5 +524,4 @@ class TypeScriptAnalyzer(_BaseJSTSAnalyzer):
 
     def __init__(self, root: str | Path) -> None:
         super().__init__(root, ts_language_name="typescript", language_id="typescript")
-
 
