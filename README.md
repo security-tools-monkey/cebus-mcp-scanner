@@ -50,6 +50,27 @@ mcp-scanner scan --path /path/to/mcp/project --fail-on medium
 mcp-scanner scan --path /path/to/mcp/project --config config.yaml
 ```
 
+### Zip Input
+
+Acceptable input paths:
+- Project folder
+- `.zip` archive containing the project
+
+```bash
+# Scan a zipped project
+mcp-scanner scan --path /path/to/project.zip
+
+# Keep extracted contents for debugging
+mcp-scanner scan --path /path/to/project.zip --keep-extracted
+```
+
+Extraction limits and safety notes:
+- Rejects unsafe zip paths (absolute paths or `..` segments)
+- Max files: 1000
+- Max file size: 10 MB
+- Max total extracted size: 50 MB
+- By default, zip contents extract to a temporary directory and are cleaned up after the scan
+
 ### JS/TS Scan
 
 ```bash

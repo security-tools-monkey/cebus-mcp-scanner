@@ -83,10 +83,9 @@
 - ✅ Multi-language analyzer infrastructure
 - ✅ Pattern-based rule logic (ready for other languages)
 - ✅ 3 rules refactored as proof of concept
+- ✅ Zip input support for project scans (with extraction limits)
 
-## 📋 Next Steps: Phase 4 & 5 & 6
-### Phase 4:
-1. Adopt project uploading pipeline to support zip files
+## 📋 Next Steps: Phase 5 & 6
 
 ### Phase 5: Go Support
 1. Create `GoAnalyzer` (tree-sitter-go or go/parser)
