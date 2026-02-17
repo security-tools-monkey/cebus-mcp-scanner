@@ -65,7 +65,7 @@ class DangerousShellExecutionRule(Rule):
                 continue
 
             for node in walk_ast(source_file.tree):
-                if isinstance(node, CallNode) and node.callee in language_patterns:
+                if isinstance(node, CallNode) and _matches_any(node.callee, language_patterns):
                     yield Finding(
                         rule_id=self.metadata.rule_id,
                         message=f"Shell execution via `{node.callee}`.",
