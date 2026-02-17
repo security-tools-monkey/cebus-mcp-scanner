@@ -84,15 +84,17 @@
 - ✅ Pattern-based rule logic (ready for other languages)
 - ✅ 3 rules refactored as proof of concept
 
-## 📋 Next Steps: Phase 4 & 5
+## 📋 Next Steps: Phase 4 & 5 & 6
+### Phase 4:
+1. Adopt project uploading pipeline to support zip files
 
-### Phase 4: Go Support
+### Phase 5: Go Support
 1. Create `GoAnalyzer` (tree-sitter-go or go/parser)
 2. Create Go → Unified AST mapper
 3. Add Go patterns to `patterns.py`
 4. Test with real Go projects
 
-### Phase 5: Full Rule Migration
+### Phase 6: Full Rule Migration
 1. Refactor remaining rules to use unified AST
 2. Remove legacy fallback code
 3. Update tests for multi-language scenarios
