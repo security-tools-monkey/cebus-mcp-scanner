@@ -33,7 +33,19 @@ class ProjectMetadata:
     root: Path
     manifest: Optional[MCPManifest]
     temp_dir: Optional[Path] = None
-    cleanup: Optional[Callable[[], None]] = None
+    cleanup_callback: Optional[Callable[[], None]] = None
+    cleanup_note: Optional[str] = None
+
+    def cleanup(self) -> None:
+        """Best-effort cleanup for temporary resources."""
+        if self.cleanup_callback is None:
+            return
+        try:
+            self.cleanup_callback()
+        except Exception:
+            return
+        finally:
+            self.cleanup_callback = None
 
 
 def _parse_schema_manifest(data: Dict[str, Any]) -> MCPManifest:
@@ -135,7 +147,8 @@ def load_project(path: str) -> ProjectMetadata:
             root=resolved_root,
             manifest=manifest,
             temp_dir=temp_root,
-            cleanup=stack.close,
+            cleanup_callback=stack.close,
+            cleanup_note="temp_zip_extract",
         )
 
     manifest = load_manifest(root)

@@ -123,7 +123,7 @@ def test_load_project_zip_with_single_root_directory(tmp_path: Path) -> None:
     assert project.manifest.tools == [{"name": "zip_tool", "description": "A"}]
     assert project.manifest == folder_project.manifest
     assert project.temp_dir is not None
-    assert project.cleanup is not None
+    assert project.cleanup_callback is not None
 
     project.cleanup()
     assert project.temp_dir.exists() is False
