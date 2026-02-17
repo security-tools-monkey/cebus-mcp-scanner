@@ -19,6 +19,8 @@ class MCPActionResult:
 class MCPScannerTool:
     """
     Minimal stub for MCP tool integration.
+
+    Note: scan_project accepts either a project directory or a .zip archive path.
     """
 
     def __init__(self) -> None:
@@ -93,4 +95,3 @@ class MCPScannerTool:
             "- Define network and filesystem boundaries for MCP tools.\n"
         )
         return MCPActionResult("text/markdown", content)
-

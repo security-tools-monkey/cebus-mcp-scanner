@@ -50,7 +50,11 @@ def _parse_verbosity(value: str) -> VerbosityLevel:
 @app.command()
 def scan(
     path: Path = typer.Option(
-        Path("."), "--path", "-p", help="Path to MCP project root.", exists=True
+        Path("."),
+        "--path",
+        "-p",
+        help="Path to MCP project root or .zip archive.",
+        exists=True,
     ),
     mode: str = typer.Option(
         ScanMode.LOCAL.value,
@@ -81,6 +85,12 @@ def scan(
         help="Verbosity level: quiet (default), normal, verbose.",
         show_default=True,
     ),
+    keep_extracted: bool = typer.Option(
+        False,
+        "--keep-extracted",
+        help="Keep extracted zip contents on disk for debugging.",
+        show_default=True,
+    ),
 ) -> None:
     """Run a scan against an MCP project."""
     scan_mode = _parse_mode(mode)
@@ -98,7 +108,7 @@ def scan(
     
     logger = ScanLogger(verbosity=verbosity_level, emit=console.print)
     scanner = Scanner(config=scanner_config, logger=logger)
-    result = scanner.scan(str(path), scan_mode)
+    result = scanner.scan(str(path), scan_mode, keep_extracted=keep_extracted)
 
     findings = list(result.findings)
 
@@ -184,4 +194,3 @@ def run() -> None:
 
 if __name__ == "__main__":  # pragma: no cover
     run()
-

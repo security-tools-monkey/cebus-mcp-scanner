@@ -48,9 +48,9 @@ class Scanner:
         self.logger = logger or ScanLogger(verbosity=VerbosityLevel.QUIET)
         self.languages = languages
 
-    def scan(self, path: str, mode: ScanMode) -> ScanResult:
+    def scan(self, path: str, mode: ScanMode, *, keep_extracted: bool = False) -> ScanResult:
         self.logger.info(f"Starting scan path={path} mode={mode.value}")
-        project = load_project(path)
+        project = load_project(path, keep_extracted=keep_extracted)
         try:
             multi_analyzer = MultiLanguageAnalyzer(
                 root=str(project.root),

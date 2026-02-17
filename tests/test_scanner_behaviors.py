@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import zipfile
 from pathlib import Path
 from typing import Iterable
@@ -138,6 +139,24 @@ def test_scanner_does_not_cleanup_folder_project(tmp_path: Path) -> None:
     assert project_dir.exists() is True
 
 
+def test_scanner_keeps_zip_temp_dir_when_requested(tmp_path: Path) -> None:
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    (project_dir / "app.py").write_text("print('ok')\n", encoding="utf-8")
+
+    zip_path = tmp_path / "project.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.write(project_dir / "app.py", arcname="project/app.py")
+
+    scanner = Scanner(rules=[ExplodingRule()])
+    result = scanner.scan(str(zip_path), ScanMode.SHARED, keep_extracted=True)
+
+    assert result.project.temp_dir is not None
+    assert result.project.temp_dir.exists() is True
+
+    shutil.rmtree(result.project.temp_dir, ignore_errors=True)
+
+
 def test_mcp_tool_lists_rules() -> None:
     tool = MCPScannerTool()
     response = tool.list_rules()
@@ -173,4 +192,3 @@ def test_mcp_tool_rejects_unknown_format(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError):
         tool.scan_project(str(project_dir), output_format="xml")
-

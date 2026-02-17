@@ -8,9 +8,17 @@ import json
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
+import tempfile
 from typing import Any, Callable, Dict, List, Optional
 
-from .archive_utils import extract_zip_to_tempdir, is_zip_input
+from .archive_utils import (
+    DEFAULT_MAX_FILES,
+    DEFAULT_MAX_FILE_SIZE,
+    DEFAULT_MAX_TOTAL_SIZE,
+    extract_zip_to_tempdir,
+    is_zip_input,
+    _extract_zip,
+)
 
 try:
     import yaml  # type: ignore
@@ -136,9 +144,28 @@ def load_manifest(root: Path) -> Optional[MCPManifest]:
     return _parse_common_layout(root)
 
 
-def load_project(path: str) -> ProjectMetadata:
+def load_project(path: str, *, keep_extracted: bool = False) -> ProjectMetadata:
     root = Path(path).resolve()
     if is_zip_input(root):
+        if keep_extracted:
+            temp_root = Path(tempfile.mkdtemp(prefix="mcp_scanner_zip_"))
+            _extract_zip(
+                root,
+                temp_root,
+                max_files=DEFAULT_MAX_FILES,
+                max_file_size=DEFAULT_MAX_FILE_SIZE,
+                max_total_size=DEFAULT_MAX_TOTAL_SIZE,
+            )
+            resolved_root = _resolve_zip_root(temp_root)
+            manifest = load_manifest(resolved_root)
+            return ProjectMetadata(
+                root=resolved_root,
+                manifest=manifest,
+                temp_dir=temp_root,
+                cleanup_callback=None,
+                cleanup_note="keep_extracted",
+            )
+
         stack = ExitStack()
         temp_root = stack.enter_context(extract_zip_to_tempdir(root))
         resolved_root = _resolve_zip_root(temp_root)
