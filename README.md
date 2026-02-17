@@ -50,6 +50,18 @@ mcp-scanner scan --path /path/to/mcp/project --fail-on medium
 mcp-scanner scan --path /path/to/mcp/project --config config.yaml
 ```
 
+### JS/TS Scan
+
+```bash
+# Enable JS/TS parsing (one-time install)
+pip install -e ".[js_ts]"
+
+# Scan a JS/TS project (languages auto-detected)
+mcp-scanner scan --path /path/to/js-ts-project --verbosity verbose
+```
+
+In verbose mode, the scanner logs the detected languages so you can confirm JS/TS parsing is active.
+
 ### List Available Rules
 
 ```bash

@@ -1,6 +1,6 @@
 # Multi-Language Support Implementation Status
 
-## ✅ Completed: Phase 1 & Phase 2 (Foundation + Python Migration)
+## ✅ Completed: Phase 1–3 (Foundation + Python Migration + JS/TS)
 
 ### Phase 1: Foundation ✅
 
@@ -60,24 +60,31 @@
    - `UserControlledHttpRule`: Now uses unified AST + patterns
    - `RepositorySecretRule`: Now works across all languages (regex-based)
 
+### Phase 3: JavaScript/TypeScript Support ✅
+
+1. **Tree-sitter Integration**
+   - Optional extra: `.[js_ts]`
+   - JS/TS parsing enabled when the extra is installed
+
+2. **JS/TS Analyzers**
+   - `JavaScriptAnalyzer` and `TypeScriptAnalyzer` implemented via tree-sitter
+   - Unified AST mappers for JS/TS node types
+
+3. **Patterns + Tests**
+   - JS/TS patterns added to `patterns.py`
+   - JS/TS analyzer tests added
+
 ## 🔄 Current State
 
 ### Working Features
 - ✅ Python scanning with unified AST
+- ✅ JavaScript/TypeScript scanning (requires `.[js_ts]` extra)
 - ✅ Auto-detection of project languages
 - ✅ Multi-language analyzer infrastructure
 - ✅ Pattern-based rule logic (ready for other languages)
 - ✅ 3 rules refactored as proof of concept
 
-## 📋 Next Steps: Phase 3 & 4
-
-### Phase 3: JavaScript/TypeScript Support
-1. Install tree-sitter dependencies (optional extra: `.[js_ts]`)
-2. Create `JavaScriptAnalyzer` using tree-sitter
-3. Create `TypeScriptAnalyzer` using tree-sitter
-4. Create JS/TS → Unified AST mappers
-5. Add JS/TS patterns to `patterns.py`
-6. Test with real JS/TS projects
+## 📋 Next Steps: Phase 4 & 5
 
 ### Phase 4: Go Support
 1. Create `GoAnalyzer` (tree-sitter-go or go/parser)
