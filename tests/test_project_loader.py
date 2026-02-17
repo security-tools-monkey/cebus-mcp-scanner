@@ -10,6 +10,19 @@ from mcp_scanner.loader.archive_utils import extract_zip_to_tempdir, is_zip_inpu
 from mcp_scanner.loader.project_loader import load_project
 
 
+def _write_manifest(root: Path, *, tool_name: str = "tool_a") -> None:
+    (root / "mcp.json").write_text(
+        json.dumps(
+            {
+                "tools": [{"name": tool_name, "description": "A"}],
+                "server": {"name": "demo"},
+                "env": {"MODE": "local"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_load_project_parses_schema_manifest_mcp_json(tmp_path: Path) -> None:
     project_dir = tmp_path / "project"
     project_dir.mkdir()
@@ -92,3 +105,44 @@ def test_extract_zip_rejects_zip_slip(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unsafe path"):
         with extract_zip_to_tempdir(zip_path):
             pass
+
+
+def test_load_project_zip_with_single_root_directory(tmp_path: Path) -> None:
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    _write_manifest(project_dir, tool_name="zip_tool")
+
+    zip_path = tmp_path / "project.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.write(project_dir / "mcp.json", arcname="project/mcp.json")
+
+    folder_project = load_project(str(project_dir))
+    project = load_project(str(zip_path))
+    assert project.root.name == "project"
+    assert project.manifest is not None
+    assert project.manifest.tools == [{"name": "zip_tool", "description": "A"}]
+    assert project.manifest == folder_project.manifest
+    assert project.temp_dir is not None
+    assert project.cleanup is not None
+
+    project.cleanup()
+    assert project.temp_dir.exists() is False
+
+
+def test_load_project_zip_with_flat_root(tmp_path: Path) -> None:
+    zip_path = tmp_path / "flat.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr(
+            "mcp.json",
+            json.dumps(
+                {
+                    "tools": [{"name": "flat_tool", "description": "A"}],
+                    "server": {"name": "demo"},
+                }
+            ),
+        )
+
+    project = load_project(str(zip_path))
+    assert project.root == project.temp_dir
+    assert project.manifest is not None
+    assert project.manifest.tools == [{"name": "flat_tool", "description": "A"}]

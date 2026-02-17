@@ -5,9 +5,12 @@ Project loader: resolves scan root and extracts MCP metadata/manifests into Proj
 from __future__ import annotations
 
 import json
+from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
+
+from .archive_utils import extract_zip_to_tempdir, is_zip_input
 
 try:
     import yaml  # type: ignore
@@ -29,6 +32,8 @@ class MCPManifest:
 class ProjectMetadata:
     root: Path
     manifest: Optional[MCPManifest]
+    temp_dir: Optional[Path] = None
+    cleanup: Optional[Callable[[], None]] = None
 
 
 def _parse_schema_manifest(data: Dict[str, Any]) -> MCPManifest:
@@ -121,6 +126,24 @@ def load_manifest(root: Path) -> Optional[MCPManifest]:
 
 def load_project(path: str) -> ProjectMetadata:
     root = Path(path).resolve()
+    if is_zip_input(root):
+        stack = ExitStack()
+        temp_root = stack.enter_context(extract_zip_to_tempdir(root))
+        resolved_root = _resolve_zip_root(temp_root)
+        manifest = load_manifest(resolved_root)
+        return ProjectMetadata(
+            root=resolved_root,
+            manifest=manifest,
+            temp_dir=temp_root,
+            cleanup=stack.close,
+        )
+
     manifest = load_manifest(root)
     return ProjectMetadata(root=root, manifest=manifest)
 
+
+def _resolve_zip_root(extracted_root: Path) -> Path:
+    entries = list(extracted_root.iterdir())
+    if len(entries) == 1 and entries[0].is_dir():
+        return entries[0]
+    return extracted_root
