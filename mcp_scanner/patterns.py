@@ -47,8 +47,9 @@ SHELL_EXECUTION_PATTERNS: Dict[str, List[str]] = {
     "go": [
         "os/exec.Command",
         "exec.Command",
-        "exec.Run",
-        "exec.Start",
+        "exec.CommandContext",
+        "Cmd.Run",
+        "Cmd.Start",
     ],
 }
 
@@ -140,8 +141,10 @@ HTTP_CLIENT_PATTERNS: Dict[str, List[str]] = {
         "http.Patch",
         "http.Client.Get",
         "http.Client.Post",
+        "http.Client.Do",
         "net/http.Get",
         "net/http.Post",
+        "net/http",
     ],
 }
 
@@ -185,6 +188,7 @@ FILE_ACCESS_PATTERNS: Dict[str, List[str]] = {
         "os.OpenFile",
         "ioutil.ReadFile",
         "ioutil.WriteFile",
+        "os.ReadFile",
     ],
 }
 
@@ -201,4 +205,3 @@ DANGEROUS_URL_SCHEMES: List[str] = [
 SECRET_PATTERNS = [
     r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*['\"][A-Za-z0-9_\-]{12,}['\"]",
 ]
-
