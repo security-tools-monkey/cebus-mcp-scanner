@@ -1,5 +1,5 @@
 """
-Go language analyzer (skeleton) implementing the LanguageAnalyzer interface.
+Rust language analyzer (skeleton) implementing the LanguageAnalyzer interface.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from typing import Any, Iterable, Optional
 from .base import LanguageAnalyzer
 from .language_detector import EXCLUDED_DIRS
 from ..ast_common import SourceFile, ASTNode
-from .go_mapper import GoASTMapper
+from .rust_mapper import RustASTMapper
 
 try:
     from tree_sitter import Parser  # type: ignore
@@ -21,8 +21,8 @@ except Exception:  # pragma: no cover - optional dependency
     get_language = None  # type: ignore[assignment]
 
 
-class GoAnalyzer(LanguageAnalyzer):
-    """Go language analyzer using tree-sitter."""
+class RustAnalyzer(LanguageAnalyzer):
+    """Rust language analyzer using tree-sitter."""
 
     def __init__(self, root: str | Path) -> None:
         super().__init__(root)
@@ -32,40 +32,40 @@ class GoAnalyzer(LanguageAnalyzer):
             return
 
         try:
-            go_lang = get_language("go")
+            rust_lang = get_language("rust")
             parser = Parser()
-            parser.set_language(go_lang)
+            parser.set_language(rust_lang)
             self._parser = parser
         except Exception:
             self._parser = None
 
     @property
     def language(self) -> str:
-        return "go"
+        return "rust"
 
     def iter_source_files(self) -> Iterable[str]:
-        """Iterate over Go source files."""
+        """Iterate over Rust source files."""
         for dirpath, dirnames, filenames in os.walk(self.root):
             dirnames[:] = [d for d in dirnames if d not in EXCLUDED_DIRS]
             for filename in filenames:
-                if filename.endswith(".go"):
+                if filename.endswith(".rs"):
                     yield str(Path(dirpath) / filename)
 
     def load_source_file(self, path: str) -> SourceFile:
-        """Load and parse a Go source file."""
+        """Load and parse a Rust source file."""
         content = self.open_file(path)
         tree = self.parse_to_unified_ast(content, path)
         return SourceFile(
             path=Path(path),
             content=content,
-            language="go",
+            language="rust",
             tree=tree,
             raw_ast=None,
         )
 
     def parse_to_unified_ast(self, content: str, path: str) -> ASTNode:
         """
-        Parse Go code to a minimal unified AST.
+        Parse Rust code to a minimal unified AST.
 
         Returns an empty module AST if parsing fails or dependencies are missing.
         """
@@ -74,18 +74,18 @@ class GoAnalyzer(LanguageAnalyzer):
                 node_type="module",
                 line=None,
                 column=None,
-                language="go",
+                language="rust",
                 raw_node=None,
             )
 
         try:
             tree = self._parser.parse(bytes(content, "utf-8"))
-            return GoASTMapper.map_module(tree.root_node, content, "go")
+            return RustASTMapper.map_module(tree.root_node, content, "rust")
         except Exception:  # pragma: no cover
             return ASTNode(
                 node_type="module",
                 line=None,
                 column=None,
-                language="go",
+                language="rust",
                 raw_node=None,
             )

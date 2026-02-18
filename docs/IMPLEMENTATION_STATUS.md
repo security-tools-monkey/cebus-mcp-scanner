@@ -94,15 +94,20 @@
 5. Tests cover basic Go analyzer behavior ✅
 6. Limitations: mapper is conservative; some node types are not yet specialized, and only a subset of rules are fully validated against Go code
 
-## 📋 Next Steps: Phase 5 & 6
+## 🧩 Phase 5: Rust Support (planned)
+1. Decision: use tree-sitter-rust via `tree-sitter` + `tree-sitter-languages` (optional `rust` extra) ✅
+2. Rust analyzer + mapper: pending
+3. Rust patterns + tests: pending
 
-### Phase 5: Full Rule Migration
+## 📋 Next Steps: Phase 6 & 7
+
+### Phase 6: Full Rule Migration
 1. Refactor remaining rules to use unified AST
 2. Remove legacy fallback code
 3. Update tests for multi-language scenarios
 4. Performance optimization
 
-### Phase 6: Rule Coverage Validation
+### Phase 7: Rule Coverage Validation
 1. Validate each rule against Python/JS/TS/Go fixtures
 2. Add multi-language regression fixtures for high-risk rules
 3. Track gaps and add mapper coverage as needed

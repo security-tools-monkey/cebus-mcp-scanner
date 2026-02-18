@@ -39,6 +39,16 @@ pip install -e ".[go]"
 
 If the extra is not installed, the Go analyzer will gracefully return an empty module AST, and scans will continue for other languages.
 
+### Optional Rust Support (planned)
+
+Rust support will use tree-sitter (via `tree-sitter` + `tree-sitter-languages`). Install the extra to enable Rust analysis when the analyzer is available:
+
+```bash
+pip install -e ".[rust]"
+```
+
+If the extra is not installed, Rust analysis will be skipped and scans will continue for other languages.
+
 ## Usage
 
 ### Basic Scan

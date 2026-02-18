@@ -39,6 +39,10 @@ go = [
   "tree-sitter",
   "tree-sitter-languages"
 ]
+rust = [
+  "tree-sitter",
+  "tree-sitter-languages"
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

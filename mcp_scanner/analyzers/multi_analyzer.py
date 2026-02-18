@@ -12,6 +12,7 @@ from .language_detector import detect_languages, EXCLUDED_DIRS
 from .python_analyzer_v2 import PythonAnalyzer
 from .js_ts_analyzer import JavaScriptAnalyzer, TypeScriptAnalyzer
 from .go_analyzer import GoAnalyzer
+from .rust_analyzer import RustAnalyzer
 from ..ast_common import SourceFile
 from ..logging_utils import ScanLogger, VerbosityLevel
 from ..rules.base import Analyzer
@@ -67,6 +68,8 @@ class MultiLanguageAnalyzer(Analyzer):
             return TypeScriptAnalyzer(self.root)
         if language == "go":
             return GoAnalyzer(self.root)
+        if language == "rust":
+            return RustAnalyzer(self.root)
         else:
             self.logger.debug(f"No analyzer available for language: {language}")
             return None
