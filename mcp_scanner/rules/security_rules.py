@@ -28,9 +28,40 @@ def _is_string_literal(node: object) -> bool:
     return isinstance(node, LiteralNode) and isinstance(node.value, str)
 
 
+def _normalize_call_path(value: str) -> str:
+    normalized = re.sub(r"[\\s/]+", ".", value)
+    normalized = normalized.replace("::", ".").replace("..", ".")
+    return normalized.strip(".").lower()
+
+
 def _matches_any(callee: str, patterns: Iterable[str]) -> bool:
     callee_lower = callee.lower()
-    return any(pattern.lower() in callee_lower for pattern in patterns)
+    normalized_callee = _normalize_call_path(callee)
+    callee_segments = [seg for seg in normalized_callee.split(".") if seg]
+    for pattern in patterns:
+        pattern_lower = pattern.lower()
+        if pattern_lower in callee_lower:
+            return True
+
+        normalized_pattern = _normalize_call_path(pattern)
+        if normalized_pattern and normalized_pattern in normalized_callee:
+            return True
+
+        pattern_segments = [seg for seg in normalized_pattern.split(".") if seg]
+        if not pattern_segments:
+            continue
+
+        if callee_segments == pattern_segments:
+            return True
+
+        # Allow suffix matches to handle namespace variations (e.g., Command::new vs std::process::Command::new)
+        if len(callee_segments) >= len(pattern_segments):
+            if callee_segments[-len(pattern_segments):] == pattern_segments:
+                return True
+        else:
+            if pattern_segments[-len(callee_segments):] == callee_segments:
+                return True
+    return False
 
 
 class DangerousShellExecutionRule(Rule):

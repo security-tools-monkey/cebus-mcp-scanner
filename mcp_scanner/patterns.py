@@ -51,6 +51,12 @@ SHELL_EXECUTION_PATTERNS: Dict[str, List[str]] = {
         "Cmd.Run",
         "Cmd.Start",
     ],
+    "rust": [
+        "std::process::Command::new",
+        "Command::new",
+        "std::process::Command::spawn",
+        "Command::spawn",
+    ],
 }
 
 # HTTP client patterns
@@ -146,6 +152,11 @@ HTTP_CLIENT_PATTERNS: Dict[str, List[str]] = {
         "net/http.Post",
         "net/http",
     ],
+    "rust": [
+        "reqwest::get",
+        "reqwest::Client::get",
+        "ureq::get",
+    ],
 }
 
 # File access patterns
@@ -189,6 +200,11 @@ FILE_ACCESS_PATTERNS: Dict[str, List[str]] = {
         "ioutil.ReadFile",
         "ioutil.WriteFile",
         "os.ReadFile",
+    ],
+    "rust": [
+        "std::fs::File::open",
+        "std::fs::read",
+        "std::fs::write",
     ],
 }
 
