@@ -39,7 +39,7 @@ pip install -e ".[go]"
 
 If the extra is not installed, the Go analyzer will gracefully return an empty module AST, and scans will continue for other languages.
 
-### Optional Rust Support (planned)
+### Optional Rust Support
 
 Rust support will use tree-sitter (via `tree-sitter` + `tree-sitter-languages`). Install the extra to enable Rust analysis when the analyzer is available:
 
@@ -115,6 +115,19 @@ mcp-scanner scan --path /path/to/go-project --verbosity verbose
 
 In verbose mode, the scanner logs the detected languages so you can confirm Go parsing is active.
 For a minimal Go sample, see `tests/assets/go_example.go`.
+
+### Rust Scan
+
+```bash
+# Enable Rust parsing (one-time install)
+pip install -e ".[rust]"
+
+# Scan a Rust project (languages auto-detected)
+mcp-scanner scan --path /path/to/rust-project --verbosity verbose
+```
+
+In verbose mode, the scanner logs the detected languages so you can confirm Rust parsing is active.
+For a minimal Rust sample, see `tests/assets/rust_example.rs`.
 
 ### List Available Rules
 

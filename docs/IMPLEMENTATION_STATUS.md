@@ -80,6 +80,7 @@
 - ✅ Python scanning with unified AST
 - ✅ JavaScript/TypeScript scanning (requires `.[js_ts]` extra)
 - ✅ Go scanning (requires `.[go]` extra, limited unified AST mapping)
+- ✅ Rust scanning (requires `.[rust]` extra, limited unified AST mapping)
 - ✅ Auto-detection of project languages
 - ✅ Multi-language analyzer infrastructure
 - ✅ Pattern-based rule logic (ready for other languages)
@@ -94,20 +95,21 @@
 5. Tests cover basic Go analyzer behavior ✅
 6. Limitations: mapper is conservative; some node types are not yet specialized, and only a subset of rules are fully validated against Go code
 
-## 🧩 Phase 5: Rust Support (planned)
+## 🧩 Phase 5: Rust Support (in progress)
 1. Decision: use tree-sitter-rust via `tree-sitter` + `tree-sitter-languages` (optional `rust` extra) ✅
-2. Rust analyzer + mapper: pending
-3. Rust patterns + tests: pending
+2. Rust analyzer + mapper implemented (minimal unified AST mapping) ✅
+3. Rust patterns added to `patterns.py` ✅
+4. Tests cover basic Rust analyzer behavior ✅
+5. Limitations: mapper is conservative; some node types are not yet specialized, and only a subset of rules are fully validated against Rust code
 
-## 📋 Next Steps: Phase 6 & 7
+## 🧩 Phase 6: Full Rule Migration (in progress)
+1. Refactor remaining rules to use unified AST 🔄
+2. Remove legacy fallback code ✅
+3. Update tests for multi-language scenarios 🔄
+4. Performance optimization 🔄
+5. Limitations: only a subset of rules are validated across all languages; coverage gaps remain for Rust and Go
 
-### Phase 6: Full Rule Migration
-1. Refactor remaining rules to use unified AST
-2. Remove legacy fallback code
-3. Update tests for multi-language scenarios
-4. Performance optimization
-
-### Phase 7: Rule Coverage Validation
+## 📋 Next Steps: Phase 7
 1. Validate each rule against Python/JS/TS/Go fixtures
 2. Add multi-language regression fixtures for high-risk rules
 3. Track gaps and add mapper coverage as needed
@@ -136,6 +138,7 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 
 - JavaScript/TypeScript parsing is optional. Without the `js_ts` extra, JS/TS analyzers return an empty module AST and the scan continues for other languages.
 - Go parsing will be optional. Without the `go` extra, the Go analyzer will return an empty module AST and scans will continue for other languages.
+- Rust parsing is optional. Without the `rust` extra, the Rust analyzer will return an empty module AST and scans will continue for other languages.
 - The system is designed to be extensible: adding new languages requires implementing `LanguageAnalyzer` and creating a mapper
 - Pattern-based approach makes rules language-agnostic
 - Performance impact is minimal: unified AST is created once per file by the language analyzer
