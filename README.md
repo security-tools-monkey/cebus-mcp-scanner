@@ -93,6 +93,19 @@ mcp-scanner scan --path /path/to/js-ts-project --verbosity verbose
 
 In verbose mode, the scanner logs the detected languages so you can confirm JS/TS parsing is active.
 
+### Go Scan
+
+```bash
+# Enable Go parsing (one-time install)
+pip install -e ".[go]"
+
+# Scan a Go project (languages auto-detected)
+mcp-scanner scan --path /path/to/go-project --verbosity verbose
+```
+
+In verbose mode, the scanner logs the detected languages so you can confirm Go parsing is active.
+For a minimal Go sample, see `tests/assets/go_example.go`.
+
 ### List Available Rules
 
 ```bash

@@ -79,26 +79,33 @@
 ### Working Features
 - ✅ Python scanning with unified AST
 - ✅ JavaScript/TypeScript scanning (requires `.[js_ts]` extra)
+- ✅ Go scanning (requires `.[go]` extra, limited unified AST mapping)
 - ✅ Auto-detection of project languages
 - ✅ Multi-language analyzer infrastructure
 - ✅ Pattern-based rule logic (ready for other languages)
 - ✅ 3 rules refactored as proof of concept
 - ✅ Zip input support for project scans (with extraction limits)
 
+## 🧩 Phase 4: Go Support (in progress)
+1. Decision: use tree-sitter-go via `tree-sitter` + `tree-sitter-languages` (optional `go` extra) ✅
+2. `GoAnalyzer` implemented (tree-sitter-go) ✅
+3. Go → Unified AST mapper (minimal coverage for calls/selectors/imports/literals) ✅
+4. Go patterns added to `patterns.py` ✅
+5. Tests cover basic Go analyzer behavior ✅
+6. Limitations: mapper is conservative; some node types are not yet specialized, and only a subset of rules are fully validated against Go code
+
 ## 📋 Next Steps: Phase 5 & 6
 
-### Phase 5: Go Support
-1. Decision: use tree-sitter-go via `tree-sitter` + `tree-sitter-languages` (optional `go` extra)
-2. Create `GoAnalyzer` (tree-sitter-go)
-3. Create Go → Unified AST mapper
-4. Add Go patterns to `patterns.py`
-5. Test with real Go projects
-
-### Phase 6: Full Rule Migration
+### Phase 5: Full Rule Migration
 1. Refactor remaining rules to use unified AST
 2. Remove legacy fallback code
 3. Update tests for multi-language scenarios
 4. Performance optimization
+
+### Phase 6: Rule Coverage Validation
+1. Validate each rule against Python/JS/TS/Go fixtures
+2. Add multi-language regression fixtures for high-risk rules
+3. Track gaps and add mapper coverage as needed
 
 ## 🧪 Testing
 
