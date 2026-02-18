@@ -88,10 +88,11 @@
 ## 📋 Next Steps: Phase 5 & 6
 
 ### Phase 5: Go Support
-1. Create `GoAnalyzer` (tree-sitter-go or go/parser)
-2. Create Go → Unified AST mapper
-3. Add Go patterns to `patterns.py`
-4. Test with real Go projects
+1. Decision: use tree-sitter-go via `tree-sitter` + `tree-sitter-languages` (optional `go` extra)
+2. Create `GoAnalyzer` (tree-sitter-go)
+3. Create Go → Unified AST mapper
+4. Add Go patterns to `patterns.py`
+5. Test with real Go projects
 
 ### Phase 6: Full Rule Migration
 1. Refactor remaining rules to use unified AST
@@ -122,6 +123,7 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 - Breaking change (2026-02-16): removed Python-only analyzer helper methods from `Analyzer`; external consumers must use the unified API (`iter_source_files()`, `get_files_by_language()`, `open_file()`).
 
 - JavaScript/TypeScript parsing is optional. Without the `js_ts` extra, JS/TS analyzers return an empty module AST and the scan continues for other languages.
+- Go parsing will be optional. Without the `go` extra, the Go analyzer will return an empty module AST and scans will continue for other languages.
 - The system is designed to be extensible: adding new languages requires implementing `LanguageAnalyzer` and creating a mapper
 - Pattern-based approach makes rules language-agnostic
 - Performance impact is minimal: unified AST is created once per file by the language analyzer

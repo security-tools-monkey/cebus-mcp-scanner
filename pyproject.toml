@@ -35,6 +35,10 @@ js_ts = [
   "tree-sitter",
   "tree-sitter-languages"
 ]
+go = [
+  "tree-sitter",
+  "tree-sitter-languages"
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

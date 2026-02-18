@@ -50,6 +50,7 @@ htmlcov/
 cebus-venv/
 development_requirements/
 /development_docs/
+target_projects/
 
 # Custom files
 docs/TODO.md

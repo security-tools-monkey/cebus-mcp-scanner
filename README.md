@@ -29,6 +29,16 @@ pip install -e ".[js_ts]"
 
 If the extra is not installed, JS/TS analyzers gracefully return an empty module AST, and scans continue for other languages.
 
+### Optional Go Support
+
+Go parsing will use tree-sitter (via `tree-sitter` + `tree-sitter-languages`). Install the extra to enable Go analysis when the analyzer is available:
+
+```bash
+pip install -e ".[go]"
+```
+
+If the extra is not installed, the Go analyzer will gracefully return an empty module AST, and scans will continue for other languages.
+
 ## Usage
 
 ### Basic Scan

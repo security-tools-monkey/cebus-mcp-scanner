@@ -11,6 +11,7 @@ from .base import LanguageAnalyzer
 from .language_detector import detect_languages, EXCLUDED_DIRS
 from .python_analyzer_v2 import PythonAnalyzer
 from .js_ts_analyzer import JavaScriptAnalyzer, TypeScriptAnalyzer
+from .go_analyzer import GoAnalyzer
 from ..ast_common import SourceFile
 from ..logging_utils import ScanLogger, VerbosityLevel
 from ..rules.base import Analyzer
@@ -64,9 +65,8 @@ class MultiLanguageAnalyzer(Analyzer):
             return JavaScriptAnalyzer(self.root)
         if language == "typescript":
             return TypeScriptAnalyzer(self.root)
-        # TODO: Add Go analyzer in a future phase
-        # if language == "go":
-        #     return GoAnalyzer(self.root)
+        if language == "go":
+            return GoAnalyzer(self.root)
         else:
             self.logger.debug(f"No analyzer available for language: {language}")
             return None
@@ -118,4 +118,3 @@ class MultiLanguageAnalyzer(Analyzer):
     def get_supported_languages(self) -> List[str]:
         """Get list of languages currently being analyzed."""
         return [a.language for a in self.analyzers]
-
