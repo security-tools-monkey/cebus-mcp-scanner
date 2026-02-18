@@ -11,6 +11,7 @@ from typing import Any, Iterable, Optional
 from .base import LanguageAnalyzer
 from .language_detector import EXCLUDED_DIRS
 from ..ast_common import SourceFile, ASTNode
+from .go_mapper import GoASTMapper
 
 try:
     from tree_sitter import Parser  # type: ignore
@@ -79,13 +80,7 @@ class GoAnalyzer(LanguageAnalyzer):
 
         try:
             tree = self._parser.parse(bytes(content, "utf-8"))
-            return ASTNode(
-                node_type="module",
-                line=None,
-                column=None,
-                language="go",
-                raw_node=tree.root_node,
-            )
+            return GoASTMapper.map_module(tree.root_node, content, "go")
         except Exception:  # pragma: no cover
             return ASTNode(
                 node_type="module",
