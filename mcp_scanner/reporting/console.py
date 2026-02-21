@@ -11,11 +11,11 @@ from ..core_types import Finding
 def render_console(findings: Iterable[Finding]) -> None:
     console = Console()
     table = Table(title="MCP Security Scanner Findings")
-    table.add_column("Severity")
-    table.add_column("Category")
-    table.add_column("Rule")
-    table.add_column("Location")
-    table.add_column("Message")
+    table.add_column("Severity", overflow="fold")
+    table.add_column("Category", overflow="fold")
+    table.add_column("Rule", overflow="fold")
+    table.add_column("Location", overflow="fold")
+    table.add_column("Message", overflow="fold")
 
     for finding in findings:
         location = finding.file_path or "<unknown>"
