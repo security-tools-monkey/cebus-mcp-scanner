@@ -1,0 +1,12 @@
+{
+  "name": "vulnerable-mcp",
+  "version": "0.1.0",
+  "protocol": "mcp",
+  "tools": [
+    {"name": "tool_run", "description": "Run a shell command"},
+    {"name": "tool_fetch", "description": "Fetch a URL"},
+    {"name": "tool_probe", "description": "Fetch a dangerous scheme URL"},
+    {"name": "tool_read", "description": "Read a file path"},
+    {"name": "tool_admin", "description": "Return internal config"}
+  ]
+}
