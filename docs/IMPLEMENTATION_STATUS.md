@@ -19,6 +19,7 @@
 3. **Language Detection** (`mcp_scanner/analyzers/language_detector.py`)
    - Auto-detection of languages by file extensions and config files
    - Supports: Python, JavaScript, TypeScript, Go
+   - Rust is not auto-detected (no `.rs`/`Cargo.toml` checks yet)
    - Excludes build/dependency directories
 
 4. **Multi-Language Analyzer** (`mcp_scanner/analyzers/multi_analyzer.py`)
@@ -55,10 +56,11 @@
      - `SECRET_PATTERNS`
    - Ready for JavaScript/TypeScript/Go patterns
 
-5. **Refactored Rules** (Proof of Concept)
-   - `DangerousShellExecutionRule`: Now uses unified AST + patterns
-   - `UserControlledHttpRule`: Now uses unified AST + patterns
-   - `RepositorySecretRule`: Now works across all languages (regex-based)
+5. **Refactored Rules** (Unified pipeline)
+   - All 17 rules now run through the unified analyzer interface
+   - AST-driven rules: `RCE001`, `RCE002`, `SSRF001`, `SSRF002`, `PROMPT001`, `RESOURCE001`
+   - Regex/heuristic rules: `SENS001-003`, `PROMPT002-003`, `AUTH001-003`,
+     `TRANSPORT001-002`, `RESOURCE002`
 
 ### Phase 3: JavaScript/TypeScript Support ✅
 
@@ -81,13 +83,20 @@
 - ✅ JavaScript/TypeScript scanning (requires `.[js_ts]` extra)
 - ✅ Go scanning (requires `.[go]` extra, limited unified AST mapping)
 - ✅ Rust scanning (requires `.[rust]` extra, limited unified AST mapping)
-- ✅ Auto-detection of project languages
+- ✅ Auto-detection of project languages (Python/JS/TS/Go only)
 - ✅ Multi-language analyzer infrastructure
 - ✅ Pattern-based rule logic (ready for other languages)
-- ✅ 3 rules refactored as proof of concept
+- ✅ All rules run through the unified analyzer pipeline
 - ✅ Zip input support for project scans (with extraction limits)
+ 
+### Current Limitations
+- Rust is only analyzed when explicitly requested (not auto-detected).
+- JS/TS/Go/Rust mappers are conservative; only a subset of node types are specialized.
+- `RESOURCE001` (timeouts) only detects Python keyword arguments; non-Python calls will
+  currently be flagged even if timeouts are handled positionally or by defaults.
+- Multi-language rule fixtures beyond Python are not yet in the test suite.
 
-## 🧩 Phase 4: Go Support (in progress)
+## 🧩 Phase 4: Go Support (baseline complete, limited coverage)
 1. Decision: use tree-sitter-go via `tree-sitter` + `tree-sitter-languages` (optional `go` extra) ✅
 2. `GoAnalyzer` implemented (tree-sitter-go) ✅
 3. Go → Unified AST mapper (minimal coverage for calls/selectors/imports/literals) ✅
@@ -95,19 +104,20 @@
 5. Tests cover basic Go analyzer behavior ✅
 6. Limitations: mapper is conservative; some node types are not yet specialized, and only a subset of rules are fully validated against Go code
 
-## 🧩 Phase 5: Rust Support (in progress)
+## 🧩 Phase 5: Rust Support (baseline complete, limited coverage)
 1. Decision: use tree-sitter-rust via `tree-sitter` + `tree-sitter-languages` (optional `rust` extra) ✅
 2. Rust analyzer + mapper implemented (minimal unified AST mapping) ✅
 3. Rust patterns added to `patterns.py` ✅
 4. Tests cover basic Rust analyzer behavior ✅
 5. Limitations: mapper is conservative; some node types are not yet specialized, and only a subset of rules are fully validated against Rust code
 
-## 🧩 Phase 6: Full Rule Migration (in progress)
-1. Refactor remaining rules to use unified AST 🔄
+## 🧩 Phase 6: Rule Migration + Validation (in progress)
+1. Migrate all rules to unified analyzer interface ✅
 2. Remove legacy fallback code ✅
-3. Update tests for multi-language scenarios 🔄
-4. Performance optimization 🔄
-5. Limitations: only a subset of rules are validated across all languages; coverage gaps remain for Rust and Go
+3. Validate rules across JS/TS/Go/Rust fixtures 🔄
+4. Add multi-language regression fixtures for high-risk rules 🔄
+5. Performance optimization 🔄
+6. Limitations: rule validation is still Python-heavy; Rust/Go/JS/TS coverage gaps remain
 
 ## 📋 Next Steps: Phase 7
 1. Validate each rule against Python/JS/TS/Go fixtures
@@ -143,6 +153,8 @@ result = scanner.scan("/path/to/project", ScanMode.SHARED)
 - Pattern-based approach makes rules language-agnostic
 - Performance impact is minimal: unified AST is created once per file by the language analyzer
 
-## 🐛 Known Issues
+## 🐛 Known Issues / Gaps
 
-- None currently identified. All tests should pass with the unified pipeline.
+- Rust is not auto-detected by `language_detector` (requires explicit `languages=["rust"]`).
+- Multi-language rule coverage is limited to Python fixtures; JS/TS/Go/Rust rules need dedicated fixtures.
+- `RESOURCE001` timeout detection only understands Python keyword arguments.
