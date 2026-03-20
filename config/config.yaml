@@ -1,0 +1,9 @@
+rules:
+  SSRF001:
+    severity_override:
+      shared: medium
+  RESOURCE002:
+    enabled: false
+  TRANSPORT001:
+    severity_override:
+      local: low
