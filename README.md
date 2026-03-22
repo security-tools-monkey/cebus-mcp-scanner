@@ -18,7 +18,6 @@ A Python CLI tool that performs **static** and **config-based** security checks 
 - MCP integration is a minimal tool class and is not wired to any MCP server framework.
 - MCP manifests are parsed but not yet consumed by rules or reporting.
 - JS/TS/Go/Rust analyzers use conservative AST mappers; only a subset of node types are specialized.
-- Rust is not auto-detected; it requires explicit language selection via the programmatic API.
 - `RESOURCE001` timeout detection only inspects Python keyword arguments; non-Python calls can be flagged even when timeouts exist.
 - Multi-language rule fixtures beyond Python are limited, so non-Python coverage is still growing.
 
