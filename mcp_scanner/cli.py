@@ -5,6 +5,8 @@ Typer-based CLI for running scans, listing rules, and printing recommendations.
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -22,7 +24,7 @@ from .settings import DEFAULT_FAIL_ON, ScanMode, SeverityLevel
 
 app = typer.Typer(help="MCP Security Scanner CLI")
 console = Console()
-_VALID_OUTPUT_FORMATS = ("console", "json", "sarif", "markdown")
+_VALID_OUTPUT_FORMATS = ("console", "json", "sarif", "markdown", "md")
 
 
 def _parse_mode(mode: str) -> ScanMode:
@@ -57,7 +59,10 @@ def _parse_formats(raw_formats: list[str]) -> list[str]:
         if entry is None:
             continue
         parts = [part.strip().lower() for part in entry.split(",")]
-        formats.extend(part for part in parts if part)
+        for part in parts:
+            if not part:
+                continue
+            formats.append("markdown" if part == "md" else part)
 
     if not formats:
         return ["console"]
@@ -72,6 +77,54 @@ def _parse_formats(raw_formats: list[str]) -> list[str]:
         )
 
     return formats
+
+
+def _ensure_parent_dir(destination: Path) -> None:
+    parent = destination.parent if destination.parent != Path("") else Path(".")
+    try:
+        parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise typer.BadParameter(
+            f"Unable to create output directory '{parent}': {exc}"
+        ) from exc
+    if not parent.is_dir():
+        raise typer.BadParameter(f"Output directory is not a directory: '{parent}'")
+    if destination.exists() and destination.is_dir():
+        raise typer.BadParameter(f"Output path is a directory: '{destination}'")
+
+
+def _write_report_file(payload: str, destination: Path) -> Path:
+    _ensure_parent_dir(destination)
+
+    tmp_file = tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=destination.parent,
+        delete=False,
+    )
+    tmp_path = Path(tmp_file.name)
+    try:
+        with tmp_file:
+            tmp_file.write(payload)
+        os.replace(tmp_path, destination)
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+    return destination
+
+
+def _resolve_output_path(
+    default_dir: Path,
+    filename: str,
+    override: Optional[Path],
+) -> Path:
+    destination = override if override is not None else default_dir / filename
+    _ensure_parent_dir(destination)
+    return destination
 
 
 @app.command()
@@ -92,9 +145,31 @@ def scan(
     output_formats: list[str] = typer.Option(
         ["console"],
         "--output-format",
+        "--format",
         "--output",
         "-o",
         help="Output format(s): console, json, sarif, markdown.",
+    ),
+    output_dir: Path = typer.Option(
+        Path("reports"),
+        "--output-dir",
+        help="Directory for JSON/SARIF/Markdown report files.",
+    ),
+    json_out: Optional[Path] = typer.Option(
+        None,
+        "--json-out",
+        help="Override JSON report output path.",
+    ),
+    sarif_out: Optional[Path] = typer.Option(
+        None,
+        "--sarif-out",
+        help="Override SARIF report output path.",
+    ),
+    markdown_out: Optional[Path] = typer.Option(
+        None,
+        "--markdown-out",
+        "--md-out",
+        help="Override Markdown report output path.",
     ),
     fail_on: str = typer.Option(
         DEFAULT_FAIL_ON.value,
@@ -146,11 +221,17 @@ def scan(
         if output_format == "console":
             render_console(findings)
         elif output_format == "json":
-            console.print(generate_json(findings))
+            path = _resolve_output_path(output_dir, "scan-report.json", json_out)
+            _write_report_file(generate_json(findings), path)
+            console.print(f"Wrote JSON report to {path}")
         elif output_format == "sarif":
-            console.print(generate_sarif(findings))
+            path = _resolve_output_path(output_dir, "scan-report.sarif", sarif_out)
+            _write_report_file(generate_sarif(findings), path)
+            console.print(f"Wrote SARIF report to {path}")
         elif output_format == "markdown":
-            console.print(_generate_markdown(findings))
+            path = _resolve_output_path(output_dir, "scan-report.md", markdown_out)
+            _write_report_file(_generate_markdown(findings), path)
+            console.print(f"Wrote Markdown report to {path}")
 
     if result.has_blocking_findings(threshold):
         raise typer.Exit(code=1)
