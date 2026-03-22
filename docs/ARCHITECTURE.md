@@ -150,7 +150,7 @@ flowchart TD
 - `mcp_scanner.scanner.Scanner`: orchestrates rule execution, applies config overrides, collects findings, and captures rule failures as `_ERROR` findings.
 - `mcp_scanner.reporting`: converts finding collections into console-rich output, JSON summaries, or SARIF for integrations.
 - `mcp_scanner.mcp_server`: FastMCP stdio runtime that registers tool endpoints for IDEs.
-- `mcp_scanner.integrations.mcp_tool.MCPScannerTool`: adapter to expose `Scanner` capabilities through MCP actions (`list_rules`, `scan_project`, `get_recommendations`).
+- `mcp_scanner.integrations.mcp_tool.MCPScannerTool`: internal adapter used by the MCP server to expose `Scanner` capabilities (`list_rules`, `scan_project`, `get_recommendations`).
 
 ## How the Tool Works
 

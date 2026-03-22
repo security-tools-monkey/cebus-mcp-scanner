@@ -7,6 +7,8 @@ This document defines the stable MCP tool contract for the Cebus MCP Security Sc
 - Tool names and input/output fields are stable across minor releases.
 - New fields may be added with defaults, but existing fields and meanings must not change in minor releases.
 
+This contract reflects the production MCP server interface exposed by `mcp_scanner.mcp_server` and is the stable surface for IDE integrations.
+
 ## Tool Catalog
 Canonical tool names (stable):
 - `scan_project`

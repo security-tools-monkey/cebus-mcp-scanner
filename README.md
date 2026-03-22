@@ -220,6 +220,10 @@ Payload examples:
 - Invalid `path` or `config_path`: ensure absolute or repo-relative paths exist and are readable.
 - Invalid `mode` or `output_format`: allowed values are documented in `docs/MCP_TOOL_CONTRACT.md`.
 
+## Release Notes
+
+- IDE-callable MCP integration via `mcp_scanner.mcp_server` (stdio transport) with stable tool contracts in `docs/MCP_TOOL_CONTRACT.md`.
+
 ## Modes
 
 ### Local Mode
