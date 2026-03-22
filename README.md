@@ -227,6 +227,7 @@ pytest --cov=mcp_scanner
 - `rules/`: Each rule as a class implementing the Rule interface
 - `reporting/`: Console, JSON, SARIF output formatters
 - `integrations/`: MCP tool integration
+- `reports/`: Generated reports
 - `cli.py`: Command-line interface
 
 ## License
