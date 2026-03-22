@@ -4,6 +4,7 @@ Typer-based CLI for running scans, listing rules, and printing recommendations.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import tempfile
@@ -25,6 +26,7 @@ from .settings import DEFAULT_FAIL_ON, ScanMode, SeverityLevel
 app = typer.Typer(help="MCP Security Scanner CLI")
 console = Console()
 _VALID_OUTPUT_FORMATS = ("console", "json", "sarif", "markdown", "md")
+_HASH_PLACEHOLDER = "{hash}"
 
 
 def _parse_mode(mode: str) -> ScanMode:
@@ -93,6 +95,51 @@ def _ensure_parent_dir(destination: Path) -> None:
         raise typer.BadParameter(f"Output path is a directory: '{destination}'")
 
 
+def _hash_file(path: Path) -> str:
+    hasher = hashlib.md5()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def _hash_directory(path: Path) -> str:
+    hasher = hashlib.md5()
+    file_paths: list[Path] = []
+    for root, _, files in os.walk(path):
+        for filename in files:
+            file_paths.append(Path(root) / filename)
+
+    for file_path in sorted(file_paths, key=lambda p: str(p.relative_to(path))):
+        relative = file_path.relative_to(path).as_posix()
+        hasher.update(relative.encode("utf-8"))
+        hasher.update(b"\0")
+        with file_path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def _hash_scan_target(path: Path) -> str:
+    if path.is_dir():
+        return _hash_directory(path)
+    if path.is_file():
+        return _hash_file(path)
+    raise typer.BadParameter(f"Scan path is not a file or directory: '{path}'")
+
+
+def _apply_hash_to_path(destination: Path, hash_value: str) -> Path:
+    destination_str = str(destination)
+    if _HASH_PLACEHOLDER in destination_str:
+        return Path(destination_str.replace(_HASH_PLACEHOLDER, hash_value))
+
+    suffix = "".join(destination.suffixes)
+    name = destination.name
+    stem = name[: -len(suffix)] if suffix else name
+    hashed_name = f"{stem}-{hash_value}{suffix}"
+    return destination.with_name(hashed_name)
+
+
 def _write_report_file(payload: str, destination: Path) -> Path:
     _ensure_parent_dir(destination)
 
@@ -121,8 +168,10 @@ def _resolve_output_path(
     default_dir: Path,
     filename: str,
     override: Optional[Path],
+    hash_value: str,
 ) -> Path:
     destination = override if override is not None else default_dir / filename
+    destination = _apply_hash_to_path(destination, hash_value)
     _ensure_parent_dir(destination)
     return destination
 
@@ -200,6 +249,11 @@ def scan(
     threshold = _parse_severity(fail_on)
     verbosity_level = _parse_verbosity(verbosity)
     formats = _parse_formats(output_formats)
+
+    needs_file_output = any(
+        fmt in {"json", "sarif", "markdown"} for fmt in formats
+    )
+    hash_value = _hash_scan_target(path) if needs_file_output else ""
     
     # Load config if provided
     scanner_config = None
@@ -221,15 +275,30 @@ def scan(
         if output_format == "console":
             render_console(findings)
         elif output_format == "json":
-            path = _resolve_output_path(output_dir, "scan-report.json", json_out)
+            path = _resolve_output_path(
+                output_dir,
+                "scan-report.json",
+                json_out,
+                hash_value,
+            )
             _write_report_file(generate_json(findings), path)
             console.print(f"Wrote JSON report to {path}")
         elif output_format == "sarif":
-            path = _resolve_output_path(output_dir, "scan-report.sarif", sarif_out)
+            path = _resolve_output_path(
+                output_dir,
+                "scan-report.sarif",
+                sarif_out,
+                hash_value,
+            )
             _write_report_file(generate_sarif(findings), path)
             console.print(f"Wrote SARIF report to {path}")
         elif output_format == "markdown":
-            path = _resolve_output_path(output_dir, "scan-report.md", markdown_out)
+            path = _resolve_output_path(
+                output_dir,
+                "scan-report.md",
+                markdown_out,
+                hash_value,
+            )
             _write_report_file(_generate_markdown(findings), path)
             console.print(f"Wrote Markdown report to {path}")
 

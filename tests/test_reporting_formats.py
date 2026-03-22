@@ -50,15 +50,15 @@ def test_cli_writes_default_report_files(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr("mcp_scanner.cli.Scanner.scan", _scan_empty_result(tmp_path))
 
     reports_dir = tmp_path / "reports"
-    _invoke_scan(
+    project_dir, hash_value = _invoke_scan(
         tmp_path,
         output_formats=["json", "sarif", "markdown"],
         output_dir=reports_dir,
     )
 
-    assert (reports_dir / "scan-report.json").exists()
-    assert (reports_dir / "scan-report.sarif").exists()
-    assert (reports_dir / "scan-report.md").exists()
+    assert (reports_dir / f"scan-report-{hash_value}.json").exists()
+    assert (reports_dir / f"scan-report-{hash_value}.sarif").exists()
+    assert (reports_dir / f"scan-report-{hash_value}.md").exists()
 
 
 def test_cli_respects_output_overrides(tmp_path, monkeypatch) -> None:
@@ -69,7 +69,7 @@ def test_cli_respects_output_overrides(tmp_path, monkeypatch) -> None:
     sarif_out = tmp_path / "reports" / "scan.sarif"
     markdown_out = tmp_path / "notes" / "report.md"
 
-    _invoke_scan(
+    project_dir, hash_value = _invoke_scan(
         tmp_path,
         output_formats=["json", "sarif", "markdown"],
         json_out=json_out,
@@ -77,9 +77,12 @@ def test_cli_respects_output_overrides(tmp_path, monkeypatch) -> None:
         markdown_out=markdown_out,
     )
 
-    assert json_out.exists()
-    assert sarif_out.exists()
-    assert markdown_out.exists()
+    assert (json_out.parent / f"{json_out.stem}-{hash_value}{json_out.suffix}").exists()
+    assert (sarif_out.parent / f"{sarif_out.stem}-{hash_value}{sarif_out.suffix}").exists()
+    assert (
+        markdown_out.parent
+        / f"{markdown_out.stem}-{hash_value}{markdown_out.suffix}"
+    ).exists()
 
 
 def _scan_empty_result(tmp_path):
@@ -97,11 +100,13 @@ def _scan_empty_result(tmp_path):
 
 def _invoke_scan(tmp_path, **kwargs):
     from mcp_scanner.cli import scan as cli_scan
+    from mcp_scanner.cli import _hash_scan_target
     from mcp_scanner.settings import DEFAULT_FAIL_ON
     from mcp_scanner.logging_utils import VerbosityLevel
 
     project_dir = tmp_path / "project"
     project_dir.mkdir()
+    (project_dir / "sample.txt").write_text("hello", encoding="utf-8")
     kwargs.setdefault("output_dir", tmp_path / "reports")
     kwargs.setdefault("json_out", None)
     kwargs.setdefault("sarif_out", None)
@@ -115,3 +120,4 @@ def _invoke_scan(tmp_path, **kwargs):
         verbosity=VerbosityLevel.QUIET.value,
         **kwargs,
     )
+    return project_dir, _hash_scan_target(project_dir)
