@@ -22,6 +22,7 @@ from .settings import DEFAULT_FAIL_ON, ScanMode, SeverityLevel
 
 app = typer.Typer(help="MCP Security Scanner CLI")
 console = Console()
+_VALID_OUTPUT_FORMATS = ("console", "json", "sarif", "markdown")
 
 
 def _parse_mode(mode: str) -> ScanMode:
@@ -47,6 +48,32 @@ def _parse_verbosity(value: str) -> VerbosityLevel:
         ) from exc
 
 
+def _parse_formats(raw_formats: list[str]) -> list[str]:
+    if not raw_formats:
+        return ["console"]
+
+    formats: list[str] = []
+    for entry in raw_formats:
+        if entry is None:
+            continue
+        parts = [part.strip().lower() for part in entry.split(",")]
+        formats.extend(part for part in parts if part)
+
+    if not formats:
+        return ["console"]
+
+    invalid = sorted({fmt for fmt in formats if fmt not in _VALID_OUTPUT_FORMATS})
+    if invalid:
+        valid_values = ", ".join(_VALID_OUTPUT_FORMATS)
+        invalid_values = ", ".join(invalid)
+        raise typer.BadParameter(
+            f"Unsupported output format(s): {invalid_values}. "
+            f"Valid values: {valid_values}."
+        )
+
+    return formats
+
+
 @app.command()
 def scan(
     path: Path = typer.Option(
@@ -62,11 +89,12 @@ def scan(
         "-m",
         help="Scanning mode: local or shared.",
     ),
-    output_format: str = typer.Option(
-        "console",
+    output_formats: list[str] = typer.Option(
+        ["console"],
+        "--output-format",
         "--output",
         "-o",
-        help="Output format: console, json, sarif, markdown.",
+        help="Output format(s): console, json, sarif, markdown.",
     ),
     fail_on: str = typer.Option(
         DEFAULT_FAIL_ON.value,
@@ -96,6 +124,7 @@ def scan(
     scan_mode = _parse_mode(mode)
     threshold = _parse_severity(fail_on)
     verbosity_level = _parse_verbosity(verbosity)
+    formats = _parse_formats(output_formats)
     
     # Load config if provided
     scanner_config = None
@@ -112,17 +141,16 @@ def scan(
 
     findings = list(result.findings)
 
-    # Select output format
-    if output_format == "console":
-        render_console(findings)
-    elif output_format == "json":
-        console.print(generate_json(findings))
-    elif output_format == "sarif":
-        console.print(generate_sarif(findings))
-    elif output_format == "markdown":
-        console.print(_generate_markdown(findings))
-    else:
-        raise typer.BadParameter("Unsupported output format.")
+    # Select output format(s)
+    for output_format in formats:
+        if output_format == "console":
+            render_console(findings)
+        elif output_format == "json":
+            console.print(generate_json(findings))
+        elif output_format == "sarif":
+            console.print(generate_sarif(findings))
+        elif output_format == "markdown":
+            console.print(_generate_markdown(findings))
 
     if result.has_blocking_findings(threshold):
         raise typer.Exit(code=1)
