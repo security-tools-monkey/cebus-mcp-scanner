@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional
 
+from ..config import load_config
 from ..reporting.json_report import generate_json
 from ..reporting.sarif import generate_sarif
 from ..rules.security_rules import all_rules
@@ -51,9 +52,16 @@ class MCPScannerTool:
         path: str,
         mode: str = ScanMode.LOCAL.value,
         output_format: str = "json",
+        config_path: Optional[str] = None,
+        keep_extracted: bool = False,
     ) -> MCPActionResult:
         scan_mode = ScanMode(mode)
-        result = self._scanner.scan(path, scan_mode)
+        scanner = (
+            Scanner(config=load_config(config_path))
+            if config_path
+            else self._scanner
+        )
+        result = scanner.scan(path, scan_mode, keep_extracted=keep_extracted)
         findings = list(result.findings)
 
         if output_format == "json":
@@ -76,7 +84,9 @@ class MCPScannerTool:
         self,
         rule_id: Optional[str] = None,
         file_path: Optional[str] = None,
+        context: Optional[Dict[str, str]] = None,
     ) -> MCPActionResult:
+        _ = context
         if rule_id:
             rule = next((r for r in self._rules if r.metadata.rule_id == rule_id), None)
             if rule:

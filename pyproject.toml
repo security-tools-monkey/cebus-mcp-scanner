@@ -13,6 +13,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
+  "mcp>=1.26.0",
   "typer>=0.12.3",
   "rich>=13.7.0",
   "pyyaml>=6.0.0"
@@ -23,6 +24,7 @@ Homepage = "https://example.com/cebus-mcp-scanner"
 
 [project.scripts]
 mcp-scanner = "mcp_scanner.cli:run"
+mcp-scanner-mcp = "mcp_scanner.mcp_server:run"
 
 [project.optional-dependencies]
 dev = [
