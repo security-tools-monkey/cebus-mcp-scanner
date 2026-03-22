@@ -31,3 +31,19 @@ allow_lists:
     - "/safe/directory/*"
     - "/tmp/scratch/*"
 
+# Optional language suffix overrides for auto-detection.
+# When provided, values replace the defaults for that language.
+# language_suffixes:
+#   python:
+#     - ".py"
+#     - ".pyi"
+#   javascript:
+#     - ".js"
+#     - ".jsx"
+#   typescript:
+#     - ".ts"
+#     - ".tsx"
+#   go:
+#     - ".go"
+#   rust:
+#     - ".rs"

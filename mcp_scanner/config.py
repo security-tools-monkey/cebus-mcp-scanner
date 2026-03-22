@@ -27,6 +27,7 @@ class RuleConfig:
 class ScannerConfig:
     rules: Dict[str, RuleConfig] = field(default_factory=dict)
     allow_lists: Dict[str, list[str]] = field(default_factory=dict)
+    language_suffixes: Dict[str, list[str]] = field(default_factory=dict)
 
     def get_severity_override(
         self, rule_id: str, mode: ScanMode
@@ -77,6 +78,10 @@ def load_config(path: str | Path) -> ScannerConfig:
             )
 
     allow_lists = data.get("allow_lists", {})
+    language_suffixes = data.get("language_suffixes", {})
 
-    return ScannerConfig(rules=rules, allow_lists=allow_lists)
-
+    return ScannerConfig(
+        rules=rules,
+        allow_lists=allow_lists,
+        language_suffixes=language_suffixes,
+    )

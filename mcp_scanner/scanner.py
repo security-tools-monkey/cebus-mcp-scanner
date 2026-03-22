@@ -56,6 +56,7 @@ class Scanner:
                 root=str(project.root),
                 languages=self.languages,
                 logger=self.logger,
+                config=self.config,
             )
             analyzer = multi_analyzer
             supported_langs = multi_analyzer.get_supported_languages()

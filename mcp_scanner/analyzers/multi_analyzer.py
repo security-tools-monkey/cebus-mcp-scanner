@@ -16,6 +16,7 @@ from .rust_analyzer import RustAnalyzer
 from ..ast_common import SourceFile
 from ..logging_utils import ScanLogger, VerbosityLevel
 from ..rules.base import Analyzer
+from ..config import ScannerConfig
 
 
 class MultiLanguageAnalyzer(Analyzer):
@@ -30,6 +31,7 @@ class MultiLanguageAnalyzer(Analyzer):
         root: str | Path,
         languages: List[str] | None = None,
         logger: Optional[ScanLogger] = None,
+        config: Optional[ScannerConfig] = None,
     ) -> None:
         """
         Initialize multi-language analyzer.
@@ -41,12 +43,13 @@ class MultiLanguageAnalyzer(Analyzer):
         """
         self.root = Path(root).resolve()
         self.logger = logger or ScanLogger(verbosity=VerbosityLevel.QUIET)
+        self.config = config
         self.analyzers: List[LanguageAnalyzer] = []
 
         if languages:
             self._init_analyzers(languages)
         else:
-            detected = detect_languages(self.root)
+            detected = detect_languages(self.root, config=self.config)
             self.logger.debug(f"Auto-detected languages: {detected}")
             self._init_analyzers(detected)
 
