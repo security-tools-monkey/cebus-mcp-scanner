@@ -4,7 +4,8 @@
 Cebus MCP Scanner is a static-analysis engine aimed at MCP (Model Context Protocol) servers and tools. It walks a project tree, loads MCP manifests if available, and inspects sources with a set of heuristic security rules that target common LLM/MCP risks (prompt-injection guardrails, arbitrary tool execution, SSRF, over-logging, etc.). The scanner is exposed through:
 - a direct Python `Scanner` class
 - a Typer CLI (via `mcp_scanner.cli`)
-- an MCP tool facade (`MCPScannerTool`) that other agents can invoke to list rules, scan projects, or fetch remediation guidance
+- an MCP stdio server runtime (`mcp_scanner.mcp_server`) that registers tools for IDE clients
+- an MCP tool facade (`MCPScannerTool`) that adapts scanner logic to MCP actions
 - reporting modules to emit JSON/SARIF/markdown outputs
 
 ## High-Level Flow
@@ -38,7 +39,8 @@ Mermaid equivalent:
 flowchart LR
     subgraph EntryPoints[Entry Points]
         CLI[CLI (typer, mcp_scanner.cli)]
-        MCPTool[MCP tool (MCPScannerTool)]
+        MCPServer[MCP server (mcp_scanner.mcp_server)]
+        MCPTool[MCP tool adapter (MCPScannerTool)]
         PyAPI[Python API (Scanner)]
     end
 
@@ -57,6 +59,8 @@ flowchart LR
         MarkdownR[Markdown (CLI/MCP)]
     end
 
+    MCPServer --> MCPTool
+    MCPTool --> Scanner
     EntryPoints --> Scanner
     Scanner --> Loader
     Scanner --> Analyzer
@@ -123,6 +127,19 @@ flowchart TD
     ExitCode --> ExitZero
 ```
 
+## Execution Flow: MCP Server Runtime
+
+This diagram shows how the MCP stdio server wires tool calls to the scanner.
+
+```mermaid
+flowchart TD
+    IDE["IDE MCP client"] -->|stdio| MCPServer[mcp_scanner.mcp_server]
+    MCPServer -->|register tools| MCPTool[MCPScannerTool]
+    MCPTool -->|scan/list/recommendations| Scanner[scanner.Scanner]
+    Scanner --> Reporting[reporting.json_report / reporting.sarif / markdown]
+    Reporting --> MCPServer
+```
+
 ## Component Summary
 
 - `mcp_scanner.loader.project_loader`: resolves project root and extracts MCP manifest context (`ProjectMetadata`) to accompany scan results.
@@ -132,7 +149,8 @@ flowchart TD
 - `mcp_scanner.config`: handles enable/disable per rule plus per-mode severity overrides, and allow-lists for future suppression logic.
 - `mcp_scanner.scanner.Scanner`: orchestrates rule execution, applies config overrides, collects findings, and captures rule failures as `_ERROR` findings.
 - `mcp_scanner.reporting`: converts finding collections into console-rich output, JSON summaries, or SARIF for integrations.
-- `mcp_scanner.integrations.mcp_tool.MCPScannerTool`: light-weight adapter to expose `Scanner` capabilities through MCP actions (`list_rules`, `scan_project`, `get_recommendations`).
+- `mcp_scanner.mcp_server`: FastMCP stdio runtime that registers tool endpoints for IDEs.
+- `mcp_scanner.integrations.mcp_tool.MCPScannerTool`: adapter to expose `Scanner` capabilities through MCP actions (`list_rules`, `scan_project`, `get_recommendations`).
 
 ## How the Tool Works
 

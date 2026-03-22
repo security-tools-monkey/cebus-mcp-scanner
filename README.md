@@ -15,7 +15,6 @@ A Python CLI tool that performs **static** and **config-based** security checks 
 
 ## Limitations
 
-- MCP integration is a minimal tool class and is not wired to any MCP server framework.
 - MCP manifests are parsed but not yet consumed by rules or reporting.
 - JS/TS/Go/Rust analyzers use conservative AST mappers; only a subset of node types are specialized.
 - `RESOURCE001` timeout detection only inspects Python keyword arguments; non-Python calls can be flagged even when timeouts exist.
@@ -161,6 +160,65 @@ mcp-scanner list-rules
 ```bash
 mcp-scanner get-recommendations --rule-id SSRF001
 ```
+
+## MCP Integration
+
+Run the MCP server over stdio:
+
+```bash
+python -m mcp_scanner.mcp_server
+```
+
+Copy-paste IDE MCP config example:
+
+```json
+{
+  "command": "python",
+  "args": ["-m", "mcp_scanner.mcp_server"],
+  "env": {
+    "PYTHONUNBUFFERED": "1"
+  }
+}
+```
+
+Supported actions:
+- `scan_project`
+- `list_rules`
+- `get_recommendations`
+
+Payload examples:
+
+`scan_project`
+```json
+{
+  "path": "/path/to/project",
+  "mode": "shared",
+  "output_format": "json",
+  "config_path": "/path/to/config.yaml",
+  "keep_extracted": false,
+  "languages": ["python", "javascript"],
+  "fail_on": "medium"
+}
+```
+
+`list_rules`
+```json
+{}
+```
+
+`get_recommendations`
+```json
+{
+  "rule_id": "SSRF001",
+  "file_path": "src/client.py"
+}
+```
+
+## MCP Troubleshooting
+
+- Missing dependency errors: install project deps in the active environment with `pip install .`
+- Invalid `path` or `config_path`: ensure absolute or repo-relative paths exist and are readable.
+- Invalid `mode` or `output_format`: allowed values are documented in `docs/MCP_TOOL_CONTRACT.md`.
 
 ## Modes
 
