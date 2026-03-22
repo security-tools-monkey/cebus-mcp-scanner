@@ -69,14 +69,24 @@ mcp-scanner scan --path /path/to/mcp/project
 # Scan in shared mode (stricter)
 mcp-scanner scan --path /path/to/mcp/project --mode shared
 
-# Output as JSON
-mcp-scanner scan --path /path/to/mcp/project --output json
+# Output formats (console default; JSON/SARIF/Markdown write files)
+mcp-scanner scan --path /path/to/mcp/project --output-format json
+
+# Multiple formats (repeatable or comma-separated)
+mcp-scanner scan --path /path/to/mcp/project --output-format sarif --output-format console
+mcp-scanner scan --path /path/to/mcp/project --output-format console,sarif,json
 
 # Fail on medium or higher severity
 mcp-scanner scan --path /path/to/mcp/project --fail-on medium
 
 # Use custom configuration file
 mcp-scanner scan --path /path/to/mcp/project --config config.yaml
+
+# Override file outputs
+mcp-scanner scan --path /path/to/mcp/project --output-format json --json-out /tmp/out.json
+mcp-scanner scan --path /path/to/mcp/project --output-format sarif --sarif-out ./reports/scan.sarif
+mcp-scanner scan --path /path/to/mcp/project --output-format markdown --markdown-out ./reports/scan.md
+mcp-scanner scan --path /path/to/mcp/project --output-format md --md-out ./reports/scan.md
 ```
 
 ### Zip Input

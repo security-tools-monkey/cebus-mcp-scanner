@@ -43,3 +43,75 @@ def test_generate_sarif_is_valid_json_and_contains_runs_results() -> None:
     run0 = data["runs"][0]
     assert "results" in run0 and len(run0["results"]) == 1
     assert run0["results"][0]["ruleId"] == "TEST001"
+
+
+def test_cli_writes_default_report_files(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("mcp_scanner.cli.render_console", lambda _: None)
+    monkeypatch.setattr("mcp_scanner.cli.Scanner.scan", _scan_empty_result(tmp_path))
+
+    reports_dir = tmp_path / "reports"
+    _invoke_scan(
+        tmp_path,
+        output_formats=["json", "sarif", "markdown"],
+        output_dir=reports_dir,
+    )
+
+    assert (reports_dir / "scan-report.json").exists()
+    assert (reports_dir / "scan-report.sarif").exists()
+    assert (reports_dir / "scan-report.md").exists()
+
+
+def test_cli_respects_output_overrides(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("mcp_scanner.cli.render_console", lambda _: None)
+    monkeypatch.setattr("mcp_scanner.cli.Scanner.scan", _scan_empty_result(tmp_path))
+
+    json_out = tmp_path / "custom" / "report.json"
+    sarif_out = tmp_path / "reports" / "scan.sarif"
+    markdown_out = tmp_path / "notes" / "report.md"
+
+    _invoke_scan(
+        tmp_path,
+        output_formats=["json", "sarif", "markdown"],
+        json_out=json_out,
+        sarif_out=sarif_out,
+        markdown_out=markdown_out,
+    )
+
+    assert json_out.exists()
+    assert sarif_out.exists()
+    assert markdown_out.exists()
+
+
+def _scan_empty_result(tmp_path):
+    from mcp_scanner.core_types import FindingsCollection
+    from mcp_scanner.loader.project_loader import ProjectMetadata
+    from mcp_scanner.scanner import ScanResult
+
+    project = ProjectMetadata(root=tmp_path, manifest=None)
+
+    def _scan(_self, _path, _mode, keep_extracted=False):
+        return ScanResult(findings=FindingsCollection([]), project=project)
+
+    return _scan
+
+
+def _invoke_scan(tmp_path, **kwargs):
+    from mcp_scanner.cli import scan as cli_scan
+    from mcp_scanner.settings import DEFAULT_FAIL_ON
+    from mcp_scanner.logging_utils import VerbosityLevel
+
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    kwargs.setdefault("output_dir", tmp_path / "reports")
+    kwargs.setdefault("json_out", None)
+    kwargs.setdefault("sarif_out", None)
+    kwargs.setdefault("markdown_out", None)
+    kwargs.setdefault("config", None)
+    kwargs.setdefault("keep_extracted", False)
+    cli_scan(
+        path=project_dir,
+        mode="local",
+        fail_on=DEFAULT_FAIL_ON.value,
+        verbosity=VerbosityLevel.QUIET.value,
+        **kwargs,
+    )

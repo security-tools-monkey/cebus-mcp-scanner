@@ -15,6 +15,7 @@ from mcp_scanner.scanner import ScanResult, Scanner
 from mcp_scanner.settings import ScanMode, Severity, SeverityLevel
 from mcp_scanner.core_types import Finding, FindingsCollection
 from mcp_scanner.integrations.mcp_tool import MCPScannerTool
+from mcp_scanner.cli import _parse_formats
 
 
 def _write_project_file(tmp_path: Path, content: str, filename: str = "module.py") -> Path:
@@ -192,3 +193,15 @@ def test_mcp_tool_rejects_unknown_format(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError):
         tool.scan_project(str(project_dir), output_format="xml")
+
+
+def test_parse_formats_accepts_repeatable_values() -> None:
+    assert _parse_formats(["sarif", "console"]) == ["sarif", "console"]
+
+
+def test_parse_formats_accepts_comma_separated_values() -> None:
+    assert _parse_formats(["console,sarif,json"]) == ["console", "sarif", "json"]
+
+
+def test_parse_formats_normalizes_markdown_alias() -> None:
+    assert _parse_formats(["md"]) == ["markdown"]
