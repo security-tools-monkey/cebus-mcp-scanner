@@ -45,7 +45,9 @@ Run a scan against a project directory or a `.zip` archive.
   "mode": "local | shared",
   "output_format": "json | sarif | markdown",
   "config_path": "string | null",
-  "keep_extracted": "boolean"
+  "keep_extracted": "boolean",
+  "languages": "array[string] | null",
+  "fail_on": "info | low | medium | high | null"
 }
 ```
 
@@ -55,6 +57,11 @@ Run a scan against a project directory or a `.zip` archive.
 - `output_format`: `"json"` (matches MCP tool default)
 - `config_path`: `null`
 - `keep_extracted`: `false`
+- `languages`: `null`
+- `fail_on`: `null`
+
+**Supported languages**
+- `python`, `javascript`, `typescript`, `go`, `rust`
 
 **Outputs**
 ```json
@@ -63,6 +70,9 @@ Run a scan against a project directory or a `.zip` archive.
   "tool": "string",
   "content_type": "string",
   "body": "string",
+  "summary": "object | null",
+  "findings": "array | null",
+  "blocking": "boolean | null",
   "data": "object | array | null",
   "error": "object | null"
 }
@@ -75,6 +85,9 @@ Run a scan against a project directory or a `.zip` archive.
   - `text/markdown` for Markdown
 - `body` is the serialized payload for the chosen output format.
 - `data` is a parsed JSON object/array when `content_type` ends with `json`, otherwise `null`.
+- `summary` includes totals and severity counts.
+- `findings` is a machine-readable array of findings, regardless of `output_format`.
+- `blocking` is only set when `fail_on` is provided.
 - `error` is `null` for successful responses.
 
 **Parity expectations**
@@ -96,6 +109,9 @@ List all available security rules and their metadata.
   "tool": "string",
   "content_type": "application/json",
   "body": "string",
+  "summary": "object | null",
+  "findings": "array | null",
+  "blocking": "boolean | null",
   "data": "array",
   "error": "object | null"
 }
@@ -143,6 +159,9 @@ Return best-practice guidance for a rule or general MCP security guidance.
   "tool": "string",
   "content_type": "text/markdown",
   "body": "string",
+  "summary": "object | null",
+  "findings": "array | null",
+  "blocking": "boolean | null",
   "data": "object | array | null",
   "error": "object | null"
 }

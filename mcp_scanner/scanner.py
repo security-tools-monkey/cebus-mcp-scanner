@@ -4,7 +4,7 @@ Core scan orchestrator: loads project context, runs rules, and returns a ScanRes
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 
 from .analyzers.multi_analyzer import MultiLanguageAnalyzer
@@ -21,6 +21,7 @@ from .core_types import Finding, FindingsCollection
 class ScanResult:
     findings: FindingsCollection
     project: ProjectMetadata
+    languages: List[str] = field(default_factory=list)
 
     def has_blocking_findings(self, fail_on: SeverityLevel) -> bool:
         return any(f.severity_threshold_passes(fail_on) for f in self.findings)
@@ -120,6 +121,6 @@ class Scanner:
                     )
 
             self.logger.info(f"Scan finished. Total findings: {len(findings)}")
-            return ScanResult(findings=findings, project=project)
+            return ScanResult(findings=findings, project=project, languages=supported_langs)
         finally:
             project.cleanup()

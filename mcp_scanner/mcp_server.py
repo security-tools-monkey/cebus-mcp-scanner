@@ -12,6 +12,8 @@ from .integrations.mcp_tool import MCPScannerTool
 
 ScanModeLiteral = Literal["local", "shared"]
 OutputFormatLiteral = Literal["json", "sarif", "markdown"]
+LanguageLiteral = Literal["python", "javascript", "typescript", "go", "rust"]
+FailOnLiteral = Literal["info", "low", "medium", "high"]
 
 
 class MCPToolResult(BaseModel):
@@ -30,6 +32,12 @@ class ScanProjectRequest(BaseModel):
     )
     keep_extracted: bool = Field(
         False, description="Keep extracted zip contents on disk."
+    )
+    languages: Optional[list[LanguageLiteral]] = Field(
+        None, description="Optional list of languages to scan."
+    )
+    fail_on: Optional[FailOnLiteral] = Field(
+        None, description="Optional severity threshold for blocking status."
     )
 
 
@@ -72,12 +80,22 @@ def _error_result(
     return CallToolResult(content=content, structuredContent=body)
 
 
-def _success_result(tool_name: str, result: MCPToolResult) -> CallToolResult:
+def _success_result(
+    tool_name: str,
+    result: MCPToolResult,
+    *,
+    summary: Optional[dict[str, Any]] = None,
+    findings: Optional[list[dict[str, Any]]] = None,
+    blocking: Optional[bool] = None,
+) -> CallToolResult:
     structured: dict[str, Any] = {
         "ok": True,
         "tool": tool_name,
         "content_type": result.content_type,
         "body": result.body,
+        "summary": summary,
+        "findings": findings,
+        "blocking": blocking,
     }
     if result.content_type.endswith("json"):
         try:
@@ -123,6 +141,8 @@ def scan_project(
     output_format: str = "json",
     config_path: Optional[str] = None,
     keep_extracted: bool = False,
+    languages: Optional[list[str]] = None,
+    fail_on: Optional[str] = None,
 ) -> CallToolResult:
     try:
         request = ScanProjectRequest(
@@ -131,6 +151,8 @@ def scan_project(
             output_format=output_format,
             config_path=config_path,
             keep_extracted=keep_extracted,
+            languages=languages,
+            fail_on=fail_on,
         )
     except ValidationError as exc:
         return _error_result(
@@ -154,8 +176,16 @@ def scan_project(
             output_format=request.output_format,
             config_path=request.config_path,
             keep_extracted=request.keep_extracted,
+            languages=list(request.languages) if request.languages else None,
+            fail_on=request.fail_on,
         )
-        return _success_result("scan_project", MCPToolResult(content_type=result.content_type, body=result.body))
+        return _success_result(
+            "scan_project",
+            MCPToolResult(content_type=result.content_type, body=result.body),
+            summary=result.summary,
+            findings=result.findings,
+            blocking=result.blocking,
+        )
     except Exception as exc:
         return _error_result(
             "internal_error",

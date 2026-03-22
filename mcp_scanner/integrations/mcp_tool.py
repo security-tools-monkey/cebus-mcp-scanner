@@ -1,20 +1,55 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Iterable, Optional
 
 from ..config import load_config
 from ..reporting.json_report import generate_json
 from ..reporting.sarif import generate_sarif
 from ..rules.security_rules import all_rules
 from ..scanner import Scanner
-from ..settings import ScanMode
+from ..settings import ScanMode, SeverityLevel
 
 
 @dataclass
 class MCPActionResult:
     content_type: str
     body: str
+    summary: Optional[dict] = None
+    findings: Optional[list[dict]] = None
+    blocking: Optional[bool] = None
+
+
+def _serialize_finding(finding) -> dict:
+    return {
+        "rule_id": finding.rule_id,
+        "message": finding.message,
+        "file": finding.file_path,
+        "line": finding.line,
+        "category": finding.category,
+        "severity": finding.severity.level.value,
+        "severity_message": finding.severity.message,
+        "why_it_matters": finding.why_it_matters,
+        "recommendation": finding.recommendation,
+        "owasp_llm_top10_ids": finding.owasp_llm_top10_ids,
+        "owasp_top10_ids": finding.owasp_top10_ids,
+    }
+
+
+def _summarize_findings(findings: Iterable) -> dict:
+    counts = {
+        SeverityLevel.INFO.value: 0,
+        SeverityLevel.LOW.value: 0,
+        SeverityLevel.MEDIUM.value: 0,
+        SeverityLevel.HIGH.value: 0,
+    }
+    total = 0
+    for finding in findings:
+        total += 1
+        level = finding.severity.level.value
+        if level in counts:
+            counts[level] += 1
+    return {"total": total, "by_severity": counts}
 
 
 class MCPScannerTool:
@@ -54,20 +89,44 @@ class MCPScannerTool:
         output_format: str = "json",
         config_path: Optional[str] = None,
         keep_extracted: bool = False,
+        languages: Optional[list[str]] = None,
+        fail_on: Optional[str] = None,
     ) -> MCPActionResult:
         scan_mode = ScanMode(mode)
-        scanner = (
-            Scanner(config=load_config(config_path))
-            if config_path
-            else self._scanner
-        )
+        config = load_config(config_path) if config_path else None
+        if config or languages:
+            scanner = Scanner(config=config, languages=languages)
+        else:
+            scanner = self._scanner
         result = scanner.scan(path, scan_mode, keep_extracted=keep_extracted)
         findings = list(result.findings)
+        findings_payload = [_serialize_finding(finding) for finding in findings]
+        summary = _summarize_findings(findings)
+        summary["mode"] = scan_mode.value
+        if result.languages:
+            summary["languages"] = result.languages
+
+        blocking = None
+        if fail_on:
+            threshold = SeverityLevel(fail_on)
+            blocking = result.has_blocking_findings(threshold)
 
         if output_format == "json":
-            return MCPActionResult("application/json", generate_json(findings))
+            return MCPActionResult(
+                "application/json",
+                generate_json(findings),
+                summary=summary,
+                findings=findings_payload,
+                blocking=blocking,
+            )
         if output_format == "sarif":
-            return MCPActionResult("application/sarif+json", generate_sarif(findings))
+            return MCPActionResult(
+                "application/sarif+json",
+                generate_sarif(findings),
+                summary=summary,
+                findings=findings_payload,
+                blocking=blocking,
+            )
         if output_format == "markdown":
             lines = ["### MCP Scan Findings"]
             for finding in findings:
@@ -77,7 +136,13 @@ class MCPScannerTool:
                 lines.append(
                     f"- **{finding.severity.level.value.upper()}** {finding.rule_id} at `{location}` – {finding.message}"
                 )
-            return MCPActionResult("text/markdown", "\n".join(lines))
+            return MCPActionResult(
+                "text/markdown",
+                "\n".join(lines),
+                summary=summary,
+                findings=findings_payload,
+                blocking=blocking,
+            )
         raise ValueError("Unsupported output format.")
 
     def get_recommendations(
