@@ -91,7 +91,6 @@ class ExplodingRule(Rule):
         description="Always raises to exercise error handling.",
         owasp_llm_top10_ids=[],
         owasp_top10_ids=[],
-        ml_top10_ids=[],
     )
 
     def scan(self, context: ScanContext) -> Iterable[Finding]:

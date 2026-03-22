@@ -24,7 +24,6 @@ class RuleMetadata:
     description: str
     owasp_llm_top10_ids: list[str]
     owasp_top10_ids: list[str]
-    ml_top10_ids: list[str]
 
 
 class Rule(abc.ABC):
@@ -81,4 +80,3 @@ class Analyzer(abc.ABC):
     def open_file(self, path: str) -> str:
         """Get raw file content."""
         ...
-

@@ -22,7 +22,6 @@ class Finding:
     recommendation: str
     owasp_llm_top10_ids: List[str] = field(default_factory=list)
     owasp_top10_ids: List[str] = field(default_factory=list)
-    ml_top10_ids: List[str] = field(default_factory=list)
 
     def severity_threshold_passes(self, fail_on: SeverityLevel) -> bool:
         order = [SeverityLevel.INFO, SeverityLevel.LOW, SeverityLevel.MEDIUM, SeverityLevel.HIGH]
@@ -49,4 +48,3 @@ class FindingsCollection:
     def filter_by_mode(self, mode: ScanMode) -> "FindingsCollection":
         # Hook for future mode-aware filtering if needed.
         return FindingsCollection(self._findings)
-

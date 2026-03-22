@@ -335,7 +335,6 @@ def list_rules() -> None:
             "description": rule.metadata.description,
             "owasp_llm_top10_ids": rule.metadata.owasp_llm_top10_ids,
             "owasp_top10_ids": rule.metadata.owasp_top10_ids,
-            "ml_top10_ids": rule.metadata.ml_top10_ids,
         }
         for rule in rules
     ]

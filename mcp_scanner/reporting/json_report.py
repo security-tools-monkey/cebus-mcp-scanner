@@ -20,7 +20,6 @@ def generate_json(findings: Iterable[Finding]) -> str:
             "recommendation": f.recommendation,
             "owasp_llm_top10_ids": f.owasp_llm_top10_ids,
             "owasp_top10_ids": f.owasp_top10_ids,
-            "ml_top10_ids": f.ml_top10_ids,
         }
         for f in findings
     ]
@@ -30,4 +29,3 @@ def generate_json(findings: Iterable[Finding]) -> str:
 def write_json(findings: Iterable[Finding], stream: TextIO) -> None:
     stream.write(generate_json(findings))
     stream.write("\n")
-

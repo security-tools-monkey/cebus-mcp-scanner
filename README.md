@@ -7,7 +7,7 @@ A Python CLI tool that performs **static** and **config-based** security checks 
 - **Mode-aware scanning**: `local` mode for trusted environments, `shared` mode for multi-tenant deployments
 - **Static analysis**: No code execution, safe for CI/CD pipelines
 - **Multiple output formats**: Console, JSON, SARIF, Markdown
-- **OWASP mappings**: Each rule includes OWASP LLM Top 10, OWASP Top 10, and ML Top 10 mappings
+- **OWASP mappings**: Each rule includes OWASP LLM Top 10 and OWASP Top 10 mappings
 - **Configurable rules**: YAML/JSON config files to enable/disable rules and adjust severities
 - **MCP manifest support**: Parses both schema-specified (mcp.json/yaml) and common layouts (package.json, pyproject.toml)
 - **MCP integration**: Available as an MCP tool for programmatic access

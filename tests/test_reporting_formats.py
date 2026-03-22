@@ -20,7 +20,6 @@ def _one_finding() -> Finding:
         recommendation="do x",
         owasp_llm_top10_ids=["LLM01"],
         owasp_top10_ids=["A01"],
-        ml_top10_ids=[],
     )
 
 

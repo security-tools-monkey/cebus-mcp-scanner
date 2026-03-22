@@ -72,7 +72,6 @@ class DangerousShellExecutionRule(Rule):
         description="Detect use of subprocess or os.system that may allow shell execution.",
         owasp_llm_top10_ids=["LLM04"],
         owasp_top10_ids=["A01"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -108,7 +107,6 @@ class DangerousShellExecutionRule(Rule):
                         recommendation="Validate input, restrict commands, or remove shell access for shared deployments.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -120,7 +118,6 @@ class UserControlledHttpRule(Rule):
         description="Detect HTTP requests using dynamic URLs without validation.",
         owasp_llm_top10_ids=["LLM02", "LLM05"],
         owasp_top10_ids=["A10"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -170,7 +167,6 @@ class UserControlledHttpRule(Rule):
                     recommendation="Validate URLs against an allow-list and restrict protocols/hosts.",
                     owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                     owasp_top10_ids=self.metadata.owasp_top10_ids,
-                    ml_top10_ids=self.metadata.ml_top10_ids,
                 )
 
 
@@ -182,7 +178,6 @@ class RepositorySecretRule(Rule):
         description="Detect potential secrets committed in repository files.",
         owasp_llm_top10_ids=["LLM06"],
         owasp_top10_ids=["A02"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -215,7 +210,6 @@ class RepositorySecretRule(Rule):
                         recommendation="Use environment variables or secret storage; rotate exposed credentials.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -228,7 +222,6 @@ class UnconstrainedToolExecutionRule(Rule):
         description="Detect flows where LLM response is parsed and directly used as shell/HTTP/DB without validation.",
         owasp_llm_top10_ids=["LLM01", "LLM05"],
         owasp_top10_ids=["A03"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -288,7 +281,6 @@ class UnconstrainedToolExecutionRule(Rule):
                     recommendation="Validate and sanitize model output before using in tool invocations.",
                     owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                     owasp_top10_ids=self.metadata.owasp_top10_ids,
-                    ml_top10_ids=self.metadata.ml_top10_ids,
                 )
 
 
@@ -301,7 +293,6 @@ class MissingGuardrailsRule(Rule):
         description="Detect tools that can hit internal networks, run commands, or read arbitrary files with no guard prompts.",
         owasp_llm_top10_ids=["LLM01", "LLM05"],
         owasp_top10_ids=["A03"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -342,7 +333,6 @@ class MissingGuardrailsRule(Rule):
                         recommendation="Add system-level instructions restricting tool usage and implement allow-lists.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -355,7 +345,6 @@ class SystemPromptLeakageRule(Rule):
         description="Detect returning raw system prompts or internal config in error paths / debug endpoints.",
         owasp_llm_top10_ids=["LLM08"],
         owasp_top10_ids=["A01"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -404,7 +393,6 @@ class SystemPromptLeakageRule(Rule):
                             recommendation="Redact or sanitize system prompts and config in error responses and debug output.",
                             owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                             owasp_top10_ids=self.metadata.owasp_top10_ids,
-                            ml_top10_ids=self.metadata.ml_top10_ids,
                         )
 
 
@@ -417,7 +405,6 @@ class OverLoggingRule(Rule):
         description="Detect logging of full prompts, tool request bodies, or environment variables.",
         owasp_llm_top10_ids=["LLM06"],
         owasp_top10_ids=["A02"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -463,7 +450,6 @@ class OverLoggingRule(Rule):
                         recommendation="Redact sensitive fields before logging or use structured logging with field filtering.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -476,7 +462,6 @@ class UnredactedInternalUrlsRule(Rule):
         description="Detect canned responses that echo internal topology.",
         owasp_llm_top10_ids=["LLM06"],
         owasp_top10_ids=["A02"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -515,7 +500,6 @@ class UnredactedInternalUrlsRule(Rule):
                         recommendation="Redact internal URLs and IPs in responses or use external-facing endpoints.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
             for match in internal_ip_pattern.finditer(content):
@@ -533,7 +517,6 @@ class UnredactedInternalUrlsRule(Rule):
                         recommendation="Redact internal URLs and IPs in responses or use external-facing endpoints.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -546,7 +529,6 @@ class ArbitraryPortProtocolRule(Rule):
         description="Flag tools that allow arbitrary schemes (ftp, file, gopher) or connect to RFC1918 ranges without restriction.",
         owasp_llm_top10_ids=["LLM02", "LLM05"],
         owasp_top10_ids=["A10"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -592,7 +574,6 @@ class ArbitraryPortProtocolRule(Rule):
                                     recommendation="Restrict URL schemes to http/https and validate hostnames.",
                                     owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                                     owasp_top10_ids=self.metadata.owasp_top10_ids,
-                                    ml_top10_ids=self.metadata.ml_top10_ids,
                                 )
 
 
@@ -605,7 +586,6 @@ class ArbitraryFileAccessRule(Rule):
         description="Detect tools that read/write arbitrary paths based on untrusted input.",
         owasp_llm_top10_ids=["LLM04"],
         owasp_top10_ids=["A01"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -650,7 +630,6 @@ class ArbitraryFileAccessRule(Rule):
                             recommendation="Validate and restrict file paths using allow-lists or chroot-like constraints.",
                             owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                             owasp_top10_ids=self.metadata.owasp_top10_ids,
-                            ml_top10_ids=self.metadata.ml_top10_ids,
                         )
 
 
@@ -663,7 +642,6 @@ class NoAuthenticationRule(Rule):
         description="Detect MCP server endpoints that run tools, manage configs, or access secrets with no auth checks.",
         owasp_llm_top10_ids=["LLM07"],
         owasp_top10_ids=["A01", "A07"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -703,7 +681,6 @@ class NoAuthenticationRule(Rule):
                         recommendation="Add authentication middleware or decorators to protect endpoints.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -716,7 +693,6 @@ class MissingTenantIsolationRule(Rule):
         description="Detect shared storage without tenant scoping (e.g. single bucket / dir).",
         owasp_llm_top10_ids=["LLM07"],
         owasp_top10_ids=["A01"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -753,7 +729,6 @@ class MissingTenantIsolationRule(Rule):
                     recommendation="Implement tenant scoping using user_id, organization, or namespace prefixes.",
                     owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                     owasp_top10_ids=self.metadata.owasp_top10_ids,
-                    ml_top10_ids=self.metadata.ml_top10_ids,
                 )
 
 
@@ -766,7 +741,6 @@ class HardcodedTrustedUsersRule(Rule):
         description="Detect magic usernames/IDs in code (admin, test) or bypass flags.",
         owasp_llm_top10_ids=["LLM07"],
         owasp_top10_ids=["A01"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -810,7 +784,6 @@ class HardcodedTrustedUsersRule(Rule):
                         recommendation="Remove hard-coded user logic and use proper authentication/authorization systems.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -823,7 +796,6 @@ class InsecureHttpRule(Rule):
         description="Detect MCP API / callbacks / tool endpoints using plain HTTP in shared mode.",
         owasp_llm_top10_ids=["LLM09"],
         owasp_top10_ids=["A02"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -860,7 +832,6 @@ class InsecureHttpRule(Rule):
                     recommendation="Use HTTPS for all external communications in production.",
                     owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                     owasp_top10_ids=self.metadata.owasp_top10_ids,
-                    ml_top10_ids=self.metadata.ml_top10_ids,
                 )
 
 
@@ -873,7 +844,6 @@ class PermissiveCorsRule(Rule):
         description="Detect overly permissive CORS (* with credentials) or missing CSRF protection.",
         owasp_llm_top10_ids=["LLM09"],
         owasp_top10_ids=["A05"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -909,7 +879,6 @@ class PermissiveCorsRule(Rule):
                         recommendation="Restrict CORS to specific origins and avoid wildcard with credentials.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -922,7 +891,6 @@ class NoTimeoutRule(Rule):
         description="Detect HTTP calls without timeout configuration.",
         owasp_llm_top10_ids=["LLM10"],
         owasp_top10_ids=["A05"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -965,7 +933,6 @@ class NoTimeoutRule(Rule):
                         recommendation="Add timeout parameter to all HTTP calls.",
                         owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                         owasp_top10_ids=self.metadata.owasp_top10_ids,
-                        ml_top10_ids=self.metadata.ml_top10_ids,
                     )
 
 
@@ -978,7 +945,6 @@ class NoInputSizeLimitRule(Rule):
         description="Detect file-processing tools without input size limits.",
         owasp_llm_top10_ids=["LLM10"],
         owasp_top10_ids=["A05"],
-        ml_top10_ids=[],
     )
 
     def severity_for_mode(self, mode: ScanMode) -> Severity:
@@ -1015,7 +981,6 @@ class NoInputSizeLimitRule(Rule):
                     recommendation="Add input size validation and limits for file-processing operations.",
                     owasp_llm_top10_ids=self.metadata.owasp_llm_top10_ids,
                     owasp_top10_ids=self.metadata.owasp_top10_ids,
-                    ml_top10_ids=self.metadata.ml_top10_ids,
                 )
 
 
